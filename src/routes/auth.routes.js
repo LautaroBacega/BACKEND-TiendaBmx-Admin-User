@@ -7,18 +7,32 @@ dotenv.config();
 
 const router = Router();
 
-router.get("/login/success", (req, res) => {
-	console.log('Usuario en sesión:', req.user);
-	if (req.user) {
-		res.status(200).json({
-			error: false,
-			message: "Successfully Loged In",
-			user: req.user,
-		});
-	} else {
-		res.status(403).json({ error: true, message: "Not Authorized" });
-	}
+router.get("/login/success", async (req, res) => {
+    console.log('Usuario en sesión:', req.user);
+
+    if (req.user) {
+        // Buscar el usuario en la base de datos para incluir el rol
+        const userDB = await userModel.findOne({ email: req.user.emails[0].value });
+
+        if (!userDB) {
+            return res.status(404).json({ error: true, message: "Usuario no encontrado en la base de datos" });
+        }
+
+        res.status(200).json({
+            error: false,
+            message: "Successfully Logged In",
+            user: {
+                name: req.user.displayName,
+                email: req.user.emails[0].value,
+                picture: req.user.photos[0].value,
+                role: userDB.role, // ✅ Ahora sí se envía el rol correctamente
+            },
+        });
+    } else {
+        res.status(403).json({ error: true, message: "Not Authorized" });
+    }
 });
+
 
 router.get("/login/failed", (req, res) => {
 	res.status(401).json({
