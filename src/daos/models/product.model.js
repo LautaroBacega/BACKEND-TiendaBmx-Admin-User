@@ -2,14 +2,13 @@ import { Schema, model } from "mongoose";
 
 export const productSchema = new Schema(
   {
-    name: { type: String, required: true },
     marca: { type: String, required: true },
+    modelo: { type: String, required: true },
+    categoria: { type: String, required: true },
     medida: { type: Number, required: true },
-    category: { type: String, required: true },
-    tipo: { type: String, required: true },
-    new_price: { type: Number, required: true },
-    old_price: { type: Number, required: true },
-    description: { type: String, required: true },
+    precioBase: { type: Number, required: true },
+    precioOferta: { type: Number, required: true },
+    descripcion: { type: String, required: true },
     color: { type: String, required: true },
     stock: { type: Number, required: true },
     image: { type: String, required: true },
