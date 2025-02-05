@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as controller from "../controllers/product.controller.js";
 import multer from "multer";
 import path from "path";
+import { ProductModel } from "../daos/models/product.model.js";
 
 const router = Router();
 
@@ -44,9 +45,12 @@ router.put("/:id", upload.single("image"), controller.update);
 router.get("/category/:categoria", async (req, res) => {
   const { categoria } = req.params;
   try {
+    console.log("Buscando productos en la categoría:", categoria);
     const products = await ProductModel.find({ categoria });
+    console.log("Productos encontrados:", products);
     res.status(200).json(products);
   } catch (error) {
+    console.error("Error en la consulta:", error);
     res.status(500).json({ message: "Error al obtener los productos", error });
   }
 });

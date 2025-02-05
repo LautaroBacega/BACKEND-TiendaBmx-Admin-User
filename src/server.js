@@ -51,18 +51,7 @@ app.use(
 app.use("/auth", authRoute);
 app.use("/api/cart", cartRoutes);
 app.use("/api", userRoutes);
-app.get("/api/products/category/:categoria", async (req, res) => {
-	const { categoria } = req.params;
-	try {
-	  console.log("Buscando productos en la categoría:", categoria); // Verificar si llega el parámetro
-	  const products = await ProductModel.find({ categoria });
-	  console.log("Productos encontrados:", products); // Verificar qué trae la base de datos
-	  res.status(200).json(products);
-	} catch (error) {
-	  console.error("Error en la consulta:", error); // Mostrar error detallado en la terminal
-	  res.status(500).json({ message: "Error al obtener los productos", error });
-	}
-  });
+app.use("/api/products", productRoutes); 
 
 console.log(path.join(__dirname, 'uploads'));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
