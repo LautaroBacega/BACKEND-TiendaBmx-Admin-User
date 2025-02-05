@@ -1,0 +1,11 @@
+npm i express nodemon dotenv cors passport passport-google-oauth20 cookie-session
+
+Some errors you may encounter:
+1. TypeError: req.session.regenerate is not a function using Passport
+soln: Downgrade passport to version 0.5.  npm uninstall passport, npm install passport@0.5
+
+2. Uncaught TypeError: Cannot read properties of undefined (reading 'user')
+soln: Pass 'user' as props directly in Home component instead of userDetails. remove line 'const user = userDetails.user'
+
+3. Cannot GET a route.
+soln: add forward slash to the begining of your routes in server folder, auth.js and server.js

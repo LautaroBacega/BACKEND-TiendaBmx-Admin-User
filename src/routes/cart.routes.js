@@ -1,0 +1,28 @@
+import express from "express";
+import { authenticateJWT } from "../middleware/auth.middleware.js";
+import * as cartController from "../controllers/cart.controller.js";
+
+const router = express.Router();
+
+// Crear un carrito
+router.post("/", cartController.createCart);
+
+// Obtener todos los carritos
+router.get("/all", cartController.getAllCarts);
+
+// Obtener el carrito
+/* router.get("/", cartController.getCart); */
+
+// Obtener un carrito por ID
+router.get("/:id", cartController.getCartById);
+
+// Agregar productos al carrito (protegida)
+router.post("/add", authenticateJWT, cartController.addToCart);
+
+// Agregar producto al carrito
+router.post("/:id/add-product", cartController.addToCart);
+
+// Eliminar producto del carrito
+router.delete("/:id/remove-product/:prodId", cartController.removeProductFromCart);
+
+export default router;
