@@ -43,7 +43,6 @@ export const create = async (req, res, next) => {
   }
 };
 
-
 export const update = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -66,7 +65,6 @@ export const update = async (req, res, next) => {
     next(error.message);
   }
 };
-
 
 export const remove = async (req, res, next) => {
   try {
@@ -92,3 +90,22 @@ export const uploadImage = (req, res) => {
     res.status(500).json({ msg: "Error al cargar la imagen", error });
   }
 };
+
+
+
+export const getByCategory = async (req, res, next) => {
+  const { categoria } = req.params;
+  
+  try {
+    const productos = await ProductModel.find({ categoria }).sort({ nombre: 1 });
+    
+    if (productos.length === 0) {
+      return res.status(404).json({ msg: "No hay productos de esta categoría" });
+    }
+
+    res.status(200).json(productos);
+  } catch (error) {
+    next(error.message);
+  }
+};
+

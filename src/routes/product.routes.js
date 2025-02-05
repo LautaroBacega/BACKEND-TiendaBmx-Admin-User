@@ -11,10 +11,7 @@ router.get("/:id", controller.getById);
 
 /* router.post("/", controller.create); */
 
-
-
 router.delete("/:id", controller.remove);
-
 
 // Configurar almacenamiento de las imágenes
 const storage = multer.diskStorage({
@@ -41,5 +38,17 @@ const upload = multer({
 router.post('/', upload.single('image'), controller.create);
 
 router.put("/:id", upload.single("image"), controller.update);
+
+
+// Ruta Filtrar productos por categoria
+router.get("/category/:categoria", async (req, res) => {
+  const { categoria } = req.params;
+  try {
+    const products = await ProductModel.find({ categoria });
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener los productos", error });
+  }
+});
 
 export default router;
