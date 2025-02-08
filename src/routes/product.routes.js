@@ -27,18 +27,20 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
     if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error('Tipo de archivo no permitido.'));
+      return cb(new Error("Tipo de archivo no permitido."));
     }
     cb(null, true);
   },
 });
 
-// Ruta para crear el producto y cargar la imagen
-router.post('/', upload.single('image'), controller.create);
+// Ruta para crear el producto con múltiples imágenes
+router.post("/", upload.array("images", 5), controller.create); 
 
-router.put("/:id", upload.single("image"), controller.update);
+// Ruta para actualizar un producto con múltiples imágenes
+router.put("/:id", upload.array("images", 5), controller.update);
+
 
 
 // Ruta Filtrar productos por categoria

@@ -21,14 +21,20 @@ export const getById = async (id) => {
 
 export const create = async (obj) => {
   try {
-    const newProd = await prodDao.create(obj);
-    if (!newProd) return false;
-    else return newProd;
+    // Asegurarse de que el objeto 'obj' tenga las imágenes como un array de URLs
+    if (obj.images && Array.isArray(obj.images) && obj.images.length > 0) {
+      const newProd = await prodDao.create(obj); // Llamar a 'prodDao.create' para crear el producto con las imágenes
+      if (!newProd) return false;
+      return newProd;
+    } else {
+      // Si no se proporcionan imágenes, manejar el caso según sea necesario
+      throw new Error("No se proporcionaron imágenes válidas");
+    }
   } catch (error) {
     console.log(error);
+    throw error; // Propagar el error para que pueda ser manejado en el controlador
   }
 };
-
 export const update = async (id, obj) => {
   try {
     const prodUpd = await prodDao.update(id, obj);

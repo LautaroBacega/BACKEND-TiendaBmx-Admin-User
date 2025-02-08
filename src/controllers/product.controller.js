@@ -22,41 +22,38 @@ export const getById = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    console.log(req.file); // Agrega esta línea para ver si el archivo llega
-    if (!req.file) {
-      return res.status(400).json({ msg: "No se ha cargado ninguna imagen." });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ msg: "No se han cargado imágenes." });
     }
 
-    const productData = req.body;
-    const imageUrl = `http://localhost:8080/uploads/${req.file.filename}`;
+    // Verifica que req.files tenga los archivos esperados
+    console.log("Archivos recibidos:", req.files);
 
-    // Crea el producto con los datos recibidos
-    const newProduct = await service.create({ ...productData, image: imageUrl });
+    // Mapeo de rutas de las imágenes subidas
+    const imageUrls = req.files.map(file => `http://localhost:8080/uploads/${file.filename}`);
+    console.log("Rutas de las imágenes:", imageUrls);
 
-    if (!newProduct) {
-      return res.status(404).json({ msg: "Error al crear el producto." });
-    }
+    // Crea el nuevo producto con las imágenes
+    const productData = { ...req.body, images: imageUrls };
 
-    res.status(200).json({ ...newProduct, imageUrl });
+    const newProduct = await service.create(productData);
+
+    res.status(200).json(newProduct);
   } catch (error) {
     next(error.message);
   }
 };
 
+
+
+
 export const update = async (req, res, next) => {
   try {
     const { id } = req.params;
-
-    // Verifica si el producto existe
-    const existingProduct = await service.getById(id);
-    if (!existingProduct) {
-      return res.status(404).json({ msg: "Producto no encontrado" });
-    }
-
-    // Si se envía un archivo, actualiza la imagen
     let updatedData = req.body;
-    if (req.file) {
-      updatedData.image = `http://localhost:8080/uploads/${req.file.filename}`;
+
+    if (req.files && req.files.length > 0) {
+      updatedData.images = req.files.map(file => `http://localhost:8080/uploads/${file.filename}`);
     }
 
     const prodUpd = await service.update(id, updatedData);
@@ -65,6 +62,7 @@ export const update = async (req, res, next) => {
     next(error.message);
   }
 };
+
 
 export const remove = async (req, res, next) => {
   try {

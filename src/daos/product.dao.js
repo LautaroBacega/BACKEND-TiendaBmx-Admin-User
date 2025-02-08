@@ -21,10 +21,16 @@ export default class ProductDaoMongoDB {
 
   async create(obj) {
     try {
-      const response = await ProductModel.create(obj);
-      return response;
+      // Verificar que 'images' sea un array de URLs
+      if (obj.images && Array.isArray(obj.images) && obj.images.length > 0) {
+        const newProduct = await ProductModel.create(obj); // Crear el producto
+        return newProduct;
+      } else {
+        throw new Error("Las imágenes no son válidas o están vacías.");
+      }
     } catch (error) {
       console.log(error);
+      throw new Error(`Error creating product: ${error.message}`);
     }
   }
 
