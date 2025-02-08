@@ -91,8 +91,6 @@ export const uploadImage = (req, res) => {
   }
 };
 
-
-
 export const getByCategory = async (req, res, next) => {
   const { categoria } = req.params;
   
