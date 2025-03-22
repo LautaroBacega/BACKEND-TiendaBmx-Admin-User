@@ -12,10 +12,6 @@ export const productSchema = new Schema(
     color: { type: String, required: true },
     stock: { type: Number, required: true },
     images: { type: [String], required: true },
-    /* image2: { type: String },
-    image3: { type: String},
-    image4: { type: String },
-    image5: { type: String}, */
   },
   {
     timestamps: true,
