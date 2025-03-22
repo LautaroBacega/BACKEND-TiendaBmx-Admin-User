@@ -104,4 +104,3 @@ export const getByCategory = async (req, res, next) => {
     next(error.message);
   }
 };
-
