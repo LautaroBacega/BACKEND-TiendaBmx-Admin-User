@@ -11,3 +11,26 @@ const userSchema = new Schema({
 });
 
 export const userModel = model("User", userSchema);
+
+/* 
+import { Schema, model } from "mongoose";
+
+const userSchema = new Schema({
+    email: { 
+        type: String, 
+        unique: true, 
+        required: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Por favor, ingresa un email válido"] // Validación de formato
+    },
+    googleId: { type: String, required: true, unique: true }, // ID de Google, obligatorio y único
+    role: { type: String, enum: ["admin", "user"], default: "user" }, // Rol del usuario
+    cart: { 
+        type: Schema.Types.ObjectId, 
+        ref: "Cart" // Referencia única al carrito activo
+    },
+}, {
+    timestamps: true // Agrega createdAt y updatedAt
+});
+
+export const userModel = model("User", userSchema);
+*/
