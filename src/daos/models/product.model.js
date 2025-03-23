@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+/* import { Schema, model } from "mongoose";
 
 export const productSchema = new Schema(
   {
@@ -18,9 +18,9 @@ export const productSchema = new Schema(
   }
 );
 
-export const ProductModel = model('products', productSchema);
+export const ProductModel = model('products', productSchema); */
 
-/* 
+
 import { Schema, model } from "mongoose";
 
 export const productSchema = new Schema(
@@ -73,4 +73,3 @@ export const productSchema = new Schema(
 );
 
 export const ProductModel = model('products', productSchema);
-*/

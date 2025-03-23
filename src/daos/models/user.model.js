@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+/* import { Schema, model } from "mongoose";
 
 const userSchema = new Schema({
     first_name: { type: String, required: true },
@@ -10,9 +10,9 @@ const userSchema = new Schema({
     cart: [{ type: Schema.Types.ObjectId, ref: "Cart" }], // Relación con carritos
 });
 
-export const userModel = model("User", userSchema);
+export const userModel = model("User", userSchema); */
 
-/* 
+
 import { Schema, model } from "mongoose";
 
 const userSchema = new Schema({
@@ -33,4 +33,4 @@ const userSchema = new Schema({
 });
 
 export const userModel = model("User", userSchema);
-*/
+
