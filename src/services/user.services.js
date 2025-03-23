@@ -9,11 +9,3 @@ export const getUsers = async () => {
     console.error("Error en getUsers:", error);
   }
 };
-
-export const createUser = async (user) => {
-  try {
-    return await userDao.createUser(user);
-  } catch (error) {
-    console.error("Error en createUser:", error);
-  }
-};

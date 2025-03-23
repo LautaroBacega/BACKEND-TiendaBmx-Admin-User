@@ -1,87 +1,73 @@
 import { Router } from "express";
 import passport from "passport";
-import jwt from "jsonwebtoken";
 import { userModel } from "../daos/models/user.model.js";
-import dotenv from "dotenv";
-dotenv.config();
 
 const router = Router();
 
+// Ruta para verificar el éxito del login
 router.get("/login/success", async (req, res) => {
-    console.log('Usuario en sesión:', req.user);
+  if (req.user) {
+    // Buscar el usuario en la base de datos para incluir el rol
+    const userDB = await userModel.findOne({ email: req.user.emails[0].value });
 
-    if (req.user) {
-        // Buscar el usuario en la base de datos para incluir el rol
-        const userDB = await userModel.findOne({ email: req.user.emails[0].value });
-
-        if (!userDB) {
-            return res.status(404).json({ error: true, message: "Usuario no encontrado en la base de datos" });
-        }
-
-        res.status(200).json({
-            error: false,
-            message: "Successfully Logged In",
-            user: {
-                name: req.user.displayName,
-                email: req.user.emails[0].value,
-                picture: req.user.photos[0].value,
-                role: userDB.role, // ✅ Ahora sí se envía el rol correctamente
-            },
-        });
-    } else {
-        res.status(403).json({ error: true, message: "Not Authorized" });
+    if (!userDB) {
+      return res.status(404).json({ error: true, message: "Usuario no encontrado en la base de datos" });
     }
+
+    res.status(200).json({
+      error: false,
+      message: "Successfully Logged In",
+      user: {
+        name: req.user.displayName,
+        email: req.user.emails[0].value,
+        picture: req.user.photos[0].value,
+        role: userDB.role,
+      },
+    });
+  } else {
+    res.status(403).json({ error: true, message: "Not Authorized" });
+  }
 });
 
-
+// Ruta para manejar el fallo del login
 router.get("/login/failed", (req, res) => {
-	res.status(401).json({
-		error: true,
-		message: "Log in failure",
-	});
+  res.status(401).json({
+    error: true,
+    message: "Log in failure",
+  });
 });
 
-router.get("/google", 
-	passport.authenticate("google", ["profile", "email"])
-);
+// Ruta para iniciar sesión con Google
+router.get("/google", passport.authenticate("google", ["profile", "email"]));
 
+// Ruta de callback de Google
 router.get("/google/callback",
-	passport.authenticate("google", { failureRedirect: "/login/failed" }),
-	async (req, res) => {
-	  console.log(req.user); // Verifica la estructura de req.user
-	  
-	  if (!req.user) {
-		return res.status(401).json({ message: "Usuario no autenticado" });
-	  }
-  
-	  let user = await userModel.findOne({ googleId: req.user.id });
-  
-	  if (!user) {
-		user = await userModel.create({
-		  googleId: req.user.id,
-		  first_name: req.user.name.givenName,
-		  last_name: req.user.name.familyName,
-		  email: req.user.emails[0].value,
-		  role: "user",
-		});
-	  }
-  
-	  // Generar el token
-	  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+  passport.authenticate("google", { failureRedirect: "/login/failed" }),
+  async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Usuario no autenticado" });
+    }
 
-	  // ✅ Imprimir el token en la consola del backend (VS Code)
-	  console.log("JWT Token generado:", token);
-  
-	  // Redirigir al frontend con el token en la URL
-	  /* res.redirect(`${process.env.CLIENT_URL}/auth/success?token=${token}`); */
-	  res.redirect(`${process.env.CLIENT_URL}`);
-	}
+    // Buscar o crear el usuario en la base de datos
+    let user = await userModel.findOne({ googleId: req.user.id });
+
+    if (!user) {
+      user = await userModel.create({
+        googleId: req.user.id,
+        email: req.user.emails[0].value,
+        role: "user",
+      });
+    }
+
+    // Redirigir al frontend
+    res.redirect(`${process.env.CLIENT_URL}`);
+  }
 );
 
+// Ruta para cerrar sesión
 router.get("/logout", (req, res) => {
-	console.log('Usuario sesión cerrada:', req.user);
-	req.logout();
-	res.redirect(process.env.CLIENT_URL);
+  req.logout();
+  res.redirect(process.env.CLIENT_URL);
 });
 
 export default router;
