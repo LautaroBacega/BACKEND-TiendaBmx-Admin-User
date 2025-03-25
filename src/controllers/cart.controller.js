@@ -1,5 +1,6 @@
 import CartDaoMongoDB from "../daos/cart.dao.js";
 import { ProductModel } from "../daos/models/product.model.js"; // Asegúrate de tener el modelo de productos
+import { CartModel } from "../daos/models/cart.model.js";
 
 const cartDao = new CartDaoMongoDB();
 
@@ -20,21 +21,24 @@ export const addToCart = async (req, res) => {
     }
 
     // Verificar si el usuario tiene un carrito asociado
-    let cart = user.cart[0]; // Obtener el primer carrito del usuario
+    let cart = await CartModel.findById(user.cart);
     if (!cart) {
-      // Si el usuario no tiene un carrito, crear uno nuevo
       cart = await cartDao.create();
-      user.cart.push(cart._id); // Asignar el nuevo carrito al usuario
+      user.cart = cart._id;
       await user.save();
     }
 
     // Agregar el producto al carrito (o actualizar la cantidad si ya está en el carrito)
-    const updatedCart = await cartDao.addProdToCart(cart._id, productId);
+    const updatedCart = await cartDao.addProdToCart(cart._id, productId, product.precioOferta || product.precioBase);
     res.status(200).json({ message: "Product added to cart", cart: updatedCart });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error adding product to cart" });
+    if (error.message.includes("sin stock")) {
+      res.status(400).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
   }
 };
 
@@ -47,6 +51,23 @@ export const createCart = async (req, res) => {
     }
     res.status(201).json(newCart);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getCart = async (req, res) => {
+  try {
+    console.log("[BACKEND] Usuario en getCart:", req.user); // ✅ ¿Usuario llega?
+    console.log("Usuario:", req.user); // 👈 Verificar datos del usuario
+    const user = req.user;
+    
+    const cart = await CartModel.findById(user.cart).populate("products.product");
+    console.log("[BACKEND] Usuario en getCart:", req.user); // ✅ ¿Usuario llega?
+    console.log("Carrito encontrado:", cart); // 👈 Verificar resultado de la consulta
+    
+    res.status(200).json(cart);
+  } catch (error) {
+    console.error("[BACKEND] Error en getCart:", error); // ✅ Detalle del error
     res.status(500).json({ message: error.message });
   }
 };

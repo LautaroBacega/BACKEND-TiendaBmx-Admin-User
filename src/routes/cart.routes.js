@@ -11,7 +11,7 @@ router.post("/", cartController.createCart);
 router.get("/all", cartController.getAllCarts);
 
 // Obtener el carrito
-/* router.get("/", cartController.getCart); */
+router.get("/", authenticateJWT, cartController.getCart);
 
 // Obtener un carrito por ID
 router.get("/:id", cartController.getCartById);
@@ -19,10 +19,7 @@ router.get("/:id", cartController.getCartById);
 // Agregar productos al carrito (protegida)
 router.post("/add", authenticateJWT, cartController.addToCart);
 
-// Agregar producto al carrito
-router.post("/:id/add-product", cartController.addToCart);
-
 // Eliminar producto del carrito
-router.delete("/:id/remove-product/:prodId", cartController.removeProductFromCart);
+router.delete("/:id/remove-product/:prodId", authenticateJWT, cartController.removeProductFromCart);
 
 export default router;

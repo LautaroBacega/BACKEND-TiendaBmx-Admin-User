@@ -1,6 +1,8 @@
 import { Router } from "express";
 import passport from "passport";
 import { userModel } from "../daos/models/user.model.js";
+import { CartModel } from "../daos/models/cart.model.js";
+import jwt from "jsonwebtoken";
 
 const router = Router();
 
@@ -44,23 +46,39 @@ router.get("/google", passport.authenticate("google", ["profile", "email"]));
 router.get("/google/callback",
   passport.authenticate("google", { failureRedirect: "/login/failed" }),
   async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Usuario no autenticado" });
-    }
+    if (!req.user) return res.status(401).json({ message: "Usuario no autenticado" });
 
-    // Buscar o crear el usuario en la base de datos
     let user = await userModel.findOne({ googleId: req.user.id });
 
     if (!user) {
+      const newCart = await CartModel.create({ products: [] });
       user = await userModel.create({
         googleId: req.user.id,
         email: req.user.emails[0].value,
         role: "user",
+        cart: newCart._id
       });
     }
 
-    // Redirigir al frontend
-    res.redirect(`${process.env.CLIENT_URL}`);
+    // 👇 Generar token JWT
+    const token = jwt.sign(
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "1h" }
+    );
+    console.log("[BACKEND] Token generado:", token); // ✅ Verificar creación
+    console.log("[BACKEND] Usuario asociado:", user._id); // ✅ ID del usuario
+
+    // 👇 Configurar cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 3600000 // 1 hora
+    });
+    console.log("[BACKEND] Cookie configurada"); // ✅ Confirmar envío de cookie
+
+    res.redirect(`${process.env.CLIENT_URL}?token=${token}`);
   }
 );
 

@@ -1,4 +1,5 @@
 import { CartModel } from "./models/cart.model.js";
+import { ProductModel } from "./models/product.model.js";
 
 export default class CartDaoMongoDB {
 
@@ -53,27 +54,58 @@ export default class CartDaoMongoDB {
   }
 
   async addProdToCart(cartId, prodId) {
-      try {
-        const existProdInCart = await this.existProdInCart(cartId, prodId);
-        if (existProdInCart) {
-          // Si el producto ya existe, aumentar la cantidad
-          return await CartModel.findOneAndUpdate(
-            { _id: cartId, 'products.product': prodId },
-            { $set: { 'products.$.quantity': existProdInCart.products[0].quantity + 1 } },
-            { new: true }
-          );
-        } else {
-          // Si el producto no existe, agregarlo
-          return await CartModel.findByIdAndUpdate(
-            cartId,
-            { $push: { products: { product: prodId, quantity: 1 } } },
-            { new: true }
-          );
-        }
-      } catch (error) {
-        console.log(error);
-        throw new Error("Error al agregar producto al carrito");
+    try {
+      // Paso 1: Obtener el producto y verificar stock
+      const product = await ProductModel.findById(prodId);
+      if (!product) throw new Error("Producto no encontrado");
+      
+      // Verificación de stock base
+      if (product.stock < 1) {
+        throw new Error("Producto sin stock");
       }
+  
+      // Paso 2: Obtener precio actual
+      const price = product.precioOferta || product.precioBase;
+  
+      // Paso 3: Verificar si el producto ya está en el carrito
+      const existProdInCart = await this.existProdInCart(cartId, prodId);
+      
+      if (existProdInCart) {
+        // Validación de stock al incrementar cantidad
+        const nuevaCantidad = existProdInCart.products[0].quantity + 1;
+        if (product.stock < nuevaCantidad) {
+          throw new Error("Stock insuficiente para agregar más unidades");
+        }
+
+        // Actualizar cantidad y precio (si cambió)
+        return await CartModel.findOneAndUpdate(
+          { _id: cartId, 'products.product': prodId },
+          { 
+            $set: { 
+              'products.$.quantity': nuevaCantidad,
+              'products.$.price': price
+            } 
+          },
+          { new: true }
+        ).populate("products.product");
+      } else {
+        // Agregar nuevo producto con precio
+        return await CartModel.findByIdAndUpdate(
+          cartId,
+          { $push: { 
+            products: { 
+              product: prodId, 
+              quantity: 1, 
+              price: price 
+            } 
+          }},
+          { new: true }
+        ).populate("products.product");
+      }
+    } catch (error) {
+      console.error(`Error en addProdToCart: ${error.message}`);
+      throw new Error(`No se pudo agregar el producto: ${error.message}`);
+    }
   }
   
   async removeProdToCart(cartId, prodId) {
@@ -122,4 +154,12 @@ export default class CartDaoMongoDB {
       console.log(error);
     }
   }
+
+  async purchaseCart(cartId) {
+    const cart = await CartModel.findById(cartId).populate("products.product");
+    for (const item of cart.products) {
+      await ProductModel.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
+    }
+  }
+
 }
