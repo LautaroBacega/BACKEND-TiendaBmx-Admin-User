@@ -32,7 +32,7 @@ app.use(
 	cookieSession({
 		name: "session",
 		keys: ["cyberwolve"],
-		maxAge: 24 * 60 * 60 * 1000,
+		maxAge: 24 * 60 * 60 * 1000 // 👈 24 horas en milisegundos
 	})
 );
 

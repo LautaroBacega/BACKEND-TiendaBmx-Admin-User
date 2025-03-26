@@ -74,7 +74,7 @@ router.get("/google/callback",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 3600000 // 1 hora
+      maxAge: 24 * 60 * 60 * 1000 // 👈 24 horas en milisegundos
     });
     console.log("[BACKEND] Cookie configurada"); // ✅ Confirmar envío de cookie
 
