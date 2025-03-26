@@ -10,7 +10,8 @@ const router = Router();
 router.get("/login/success", async (req, res) => {
   if (req.user) {
     // Buscar el usuario en la base de datos para incluir el rol
-    const userDB = await userModel.findOne({ email: req.user.emails[0].value });
+    const userDB = await userModel.findOne({ email: req.user.emails[0].value })
+      .select("-__v -createdAt -updatedAt"); // Excluir campos innecesarios
 
     if (!userDB) {
       return res.status(404).json({ error: true, message: "Usuario no encontrado en la base de datos" });
@@ -19,12 +20,7 @@ router.get("/login/success", async (req, res) => {
     res.status(200).json({
       error: false,
       message: "Successfully Logged In",
-      user: {
-        name: req.user.displayName,
-        email: req.user.emails[0].value,
-        picture: req.user.photos[0].value,
-        role: userDB.role,
-      },
+      user: userDB.toObject(), // 👈 Devuelve TODOS los campos del usuario
     });
   } else {
     res.status(403).json({ error: true, message: "Not Authorized" });
