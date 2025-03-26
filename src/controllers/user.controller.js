@@ -23,3 +23,27 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: "Error al obtener el usuario", error });
   }
 };
+
+export const updateUser = async (req, res) => {
+  try {
+    console.log("[BACKEND] ID del usuario recibido:", req.user.id);
+    console.log("[BACKEND] Datos a actualizar:", req.body);
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      req.user.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+
+    console.log("[BACKEND] Usuario actualizado en DB:", updatedUser); // ¿Se ve en consola?
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json({ message: "Usuario actualizado exitosamente", updatedUser });
+  } catch (error) {
+    console.error("[BACKEND] Error al actualizar:", error);
+    res.status(400).json({ message: "Error al actualizar", error: error.message });
+  }
+};
