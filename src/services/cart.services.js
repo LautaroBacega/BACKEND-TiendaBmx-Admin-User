@@ -6,9 +6,6 @@ import { CartModel } from "../daos/mongodb/models/cart.model.js";
 const cartDao = new CartDaoMongoDB();
 const productDao = new ProductDaoMongoDB();
 
-import { createTicket } from '../daos/mongodb/ticket.dao.js';
-import { v4 as uuidv4 } from 'uuid';
-
 export const getAll = async () => {
   try {
     return await cartDao.getAll();
@@ -93,68 +90,16 @@ export const updateProdQuantityToCart = async (cartId, prodId, quantity) => {
   }
 };
 
-export const clearCart = async (cartId) => {
+export const clearCart = async (req, res) => {
   try {
-    const existCart = await getById(cartId);
-    if (!existCart) return null;
-    return await cartDao.clearCart(cartId)
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const finalizarCompra = async (cartId, user) => {
-  try {
-    if (!user || !user._id) {
-      throw new Error('Usuario no válido o no autenticado');
-    }
-
-    const cart = await CartModel.findById(cartId).populate("products.product");
-
-    if (!cart) {
-      throw new Error('Carrito no encontrado');
-    }
-
-    const productosNoComprados = [];
-
-    for (let item of cart.products) {
-      const { product, quantity } = item;
-
-      if (!product || !product._id) {
-        throw new Error(`Producto no encontrado en el carrito`);
-      }
-
-      if (product.stock == null || isNaN(product.stock)) {
-        throw new Error(`El producto ${product.name || 'desconocido'} tiene un valor de stock inválido`);
-      }
-
-      if (product.stock < quantity) {
-        productosNoComprados.push(item);
-        continue;
-      }
-
-      const newStock = product.stock - quantity;
-      await productDao.update(product._id, { stock: newStock });
-    }
-
-    // Crear ticket de compra
-    const ticket = await createTicket({
-      code: uuidv4(),
-      purchase_datetime: new Date(),
-      amount: cart.products.reduce(
-        (acc, curr) => acc + curr.quantity * curr.product.price,
-        0
-      ),
-      purchaser: user._id,
-    });
-
-    // Actualizar el carrito con solo los productos no comprados
-    cart.products = productosNoComprados;
+    const user = req.user;
+    const cart = await CartModel.findById(user.cart);
+    
+    cart.products = [];
     await cart.save();
-
-    return ticket;
+    
+    res.status(200).json({ message: "Carrito vaciado correctamente" });
   } catch (error) {
-    console.log(error);
-    throw error;
+    res.status(500).json({ message: error.message });
   }
 };

@@ -22,4 +22,7 @@ router.post("/add", authenticateJWT, cartController.addToCart);
 // Eliminar producto del carrito
 router.delete("/:id/remove-product/:prodId", authenticateJWT, cartController.removeProductFromCart);
 
+// Vaciar carrito
+router.delete("/", authenticateJWT, cartController.clearCart);
+
 export default router;

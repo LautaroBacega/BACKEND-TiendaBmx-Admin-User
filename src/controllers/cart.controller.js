@@ -109,3 +109,18 @@ export const removeProductFromCart = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Vaciar carrito
+export const clearCart = async (req, res) => {
+  try {
+    const user = req.user;
+    const cart = await CartModel.findById(user.cart);
+    
+    cart.products = [];
+    await cart.save();
+    
+    res.status(200).json({ message: "Carrito vaciado correctamente" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

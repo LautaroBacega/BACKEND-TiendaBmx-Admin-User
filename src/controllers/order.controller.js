@@ -7,6 +7,7 @@ export const createOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   
+  console.log("Iniciando creación de orden");
   try {
     const user = await userModel.findById(req.user.id)
       .populate('cart')
@@ -60,10 +61,13 @@ export const createOrder = async (req, res) => {
     user.orders.push(order._id);
     await user.save({ session });
 
+    console.log("Orden creada:", order); 
     await session.commitTransaction();
+    console.log("Transacción completada");
     res.status(201).json(order);
 
   } catch (error) {
+    console.error("Error en creación de orden:", error);
     await session.abortTransaction();
     res.status(400).json({ error: error.message });
   } finally {
