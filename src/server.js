@@ -14,6 +14,7 @@ import cookieParser from "cookie-parser";
 import cartRoutes from "./routes/cart.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -52,7 +53,8 @@ app.use(
 app.use("/auth", authRoute);
 app.use("/api/cart", cartRoutes);
 app.use("/api", userRoutes);
-app.use("/api/products", productRoutes); 
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
 
 console.log(path.join(__dirname, 'uploads'));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
