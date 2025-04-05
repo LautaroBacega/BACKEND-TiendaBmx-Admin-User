@@ -13,6 +13,11 @@ const userSchema = new Schema({
         type: Schema.Types.ObjectId, 
         ref: "Cart" // Referencia única al carrito activo
     },
+    orders: [{
+        type: Schema.Types.ObjectId,
+        ref: "Order",
+        default: []
+    }],
     nombre: { type: String, default: "" },
     apellido: { type: String, default: "" },
     provincia: { type: String, default: "" },
