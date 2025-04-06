@@ -88,3 +88,15 @@ export const getOrderById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getUserOrders = async (req, res) => {
+    try {
+      const orders = await OrderModel.find({ user: req.params.userId })
+        .populate('products.product')
+        .sort({ createdAt: -1 })
+  
+      res.json(orders)
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+}
