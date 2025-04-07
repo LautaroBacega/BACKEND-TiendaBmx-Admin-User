@@ -45,8 +45,10 @@ const orderSchema = new Schema({
     status: {
       type: String,
       enum: ["creado", "pago aprobado", "preparando paquete", "enviado", "entregado", "cancelado"],
-      default: "creado"
+      default: "creado",
+      required: true
     },
+    
     timestamp: {
       type: Date,
       default: Date.now
