@@ -100,3 +100,21 @@ export const getUserOrders = async (req, res) => {
       res.status(500).json({ error: error.message })
     }
 }
+
+export const getAllOrders = async (req, res) => {
+    try {
+      // Verificar rol de administrador
+      if(req.user.role !== "admin") {
+        return res.status(403).json({ error: "Acceso no autorizado" });
+      }
+  
+      const orders = await OrderModel.find()
+        .populate('user', 'nombre apellido email')
+        .populate('products.product')
+        .sort({ createdAt: -1 });
+  
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+};
