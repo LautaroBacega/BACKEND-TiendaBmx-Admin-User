@@ -118,3 +118,57 @@ export const getAllOrders = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
 };
+
+export const updateOrderStatus = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        // Validar estado
+        const validStatus = [
+            "creado", 
+            "pago aprobado", 
+            "preparando paquete", 
+            "enviado", 
+            "entregado", 
+            "cancelado"
+        ];
+        
+        if (!validStatus.includes(status)) {
+            return res.status(400).json({ error: "Estado inválido" });
+        }
+
+        // Actualizar orden (CORRECCIÓN APLICADA)
+        const updatedOrder = await OrderModel.findByIdAndUpdate(
+            id,
+            { 
+                $push: { 
+                    orderStatus: { 
+                        status: status, // <-- Sintaxis explícita
+                        timestamp: new Date() 
+                    } 
+                } 
+            }, // <-- ¡Esta coma es crucial!
+            { 
+                new: true, 
+                session 
+            }
+        ).populate('user', 'nombre email');
+
+        if (!updatedOrder) {
+            return res.status(404).json({ error: "Orden no encontrada" });
+        }
+
+        await session.commitTransaction();
+        res.json(updatedOrder);
+
+    } catch (error) {
+        await session.abortTransaction();
+        res.status(500).json({ error: error.message });
+    } finally {
+        session.endSession();
+    }
+};
