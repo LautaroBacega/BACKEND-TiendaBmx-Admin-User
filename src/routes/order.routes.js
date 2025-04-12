@@ -1,6 +1,6 @@
 import express from "express";
 import { adminMiddleware, authenticateJWT, authMiddleware } from "../middleware/auth.middleware.js";
-import { createOrder, getAllOrders, getOrderById, getUserOrders, updateOrderStatus } from "../controllers/order.controller.js";
+import { createOrder, exportAllOrders, generateInvoice, getAllOrders, getOrderById, getUserOrders, updateOrderStatus } from "../controllers/order.controller.js";
 
 
 const router = express.Router();
@@ -15,4 +15,18 @@ router.patch(
     adminMiddleware, 
     updateOrderStatus
   );
+
+router.get(
+  '/:id/invoice',
+  authenticateJWT,
+  generateInvoice
+);
+
+router.get(
+  '/export/all',
+  authenticateJWT,
+  adminMiddleware,
+  exportAllOrders
+);
+
 export default router;
