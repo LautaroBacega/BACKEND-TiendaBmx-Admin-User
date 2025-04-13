@@ -7,11 +7,7 @@ import { ProductModel } from "../daos/models/product.model.js";
 const router = Router();
 
 router.get("/", controller.getAll);
-
 router.get("/:id", controller.getById);
-
-/* router.post("/", controller.create); */
-
 router.delete("/:id", controller.remove);
 
 // Configurar almacenamiento de las imágenes
@@ -40,8 +36,6 @@ router.post("/", upload.array("images", 5), controller.create);
 
 // Ruta para actualizar un producto con múltiples imágenes
 router.put("/:id", upload.array("images", 5), controller.update);
-
-
 
 // Ruta Filtrar productos por categoria
 router.get("/category/:categoria", async (req, res) => {

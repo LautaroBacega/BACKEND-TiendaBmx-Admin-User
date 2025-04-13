@@ -10,6 +10,6 @@ router.get("/users", getUsers);
 // Obtener un usuario por ID (solo para administradores)
 router.get("/users/:id", getUserById);
 
-router.put("/users/update",authenticateUser, updateUser);
+router.put("/users/update", authenticateUser, updateUser);
 
 export default router;
