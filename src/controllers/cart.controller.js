@@ -1,126 +1,186 @@
-import CartDaoMongoDB from "../daos/cart.dao.js";
-import { ProductModel } from "../daos/models/product.model.js"; // Asegúrate de tener el modelo de productos
-import { CartModel } from "../daos/models/cart.model.js";
+import * as cartService from "../services/cart.services.js"
+import * as userService from "../services/user.services.js"
 
-const cartDao = new CartDaoMongoDB();
-
-// Agregar producto al carrito - solo accesible con un token válido
-export const addToCart = async (req, res) => {
-  const user = req.user; // Usuario autenticado
-  const { productId } = req.body; // ID del producto a agregar al carrito
-
-  if (!productId) {
-    return res.status(400).json({ message: "Product ID is required" });
-  }
-
-  try {
-    // Verificar si el producto existe
-    const product = await ProductModel.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    // Verificar si el usuario tiene un carrito asociado
-    let cart = await CartModel.findById(user.cart);
-    if (!cart) {
-      cart = await cartDao.create();
-      user.cart = cart._id;
-      await user.save();
-    }
-
-    // Agregar el producto al carrito (o actualizar la cantidad si ya está en el carrito)
-    const updatedCart = await cartDao.addProdToCart(cart._id, productId, product.precioOferta || product.precioBase);
-    res.status(200).json({ message: "Product added to cart", cart: updatedCart });
-
-  } catch (error) {
-    console.error(error);
-    if (error.message.includes("sin stock")) {
-      res.status(400).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  }
-};
-
-// Crear un carrito
+/**
+ * Crea un nuevo carrito
+ */
 export const createCart = async (req, res) => {
   try {
-    const newCart = await cartDao.create();
-    if (!newCart) {
-      return res.status(500).json({ message: "Error al crear el carrito" });
-    }
-    res.status(201).json(newCart);
+    const newCart = await cartService.create()
+    res.status(201).json(newCart)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error en createCart:", error.message)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
-export const getCart = async (req, res) => {
-  try {
-    console.log("[BACKEND] Usuario en getCart:", req.user); // ✅ ¿Usuario llega?
-    console.log("Usuario:", req.user); // 👈 Verificar datos del usuario
-    const user = req.user;
-    
-    const cart = await CartModel.findById(user.cart).populate("products.product");
-    console.log("[BACKEND] Usuario en getCart:", req.user); // ✅ ¿Usuario llega?
-    console.log("Carrito encontrado:", cart); // 👈 Verificar resultado de la consulta
-    
-    res.status(200).json(cart);
-  } catch (error) {
-    console.error("[BACKEND] Error en getCart:", error); // ✅ Detalle del error
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Obtener todos los carritos
+/**
+ * Obtiene todos los carritos
+ */
 export const getAllCarts = async (req, res) => {
   try {
-    const carts = await cartDao.getAll();
-    res.status(200).json(carts);
+    const carts = await cartService.getAll()
+    res.status(200).json(carts)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error en getAllCarts:", error.message)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
-// Obtener un carrito específico por ID
+/**
+ * Obtiene el carrito del usuario autenticado
+ */
+export const getCart = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Usuario no autenticado" })
+    }
+
+    const user = await userService.getById(req.user.id)
+
+    if (!user || !user.cart) {
+      return res.status(404).json({ error: "Carrito no encontrado" })
+    }
+
+    const cart = await cartService.getById(user.cart)
+    res.status(200).json(cart)
+  } catch (error) {
+    console.error("Error en getCart:", error.message)
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Obtiene un carrito por su ID
+ */
 export const getCartById = async (req, res) => {
-  const { id } = req.params;
   try {
-    const cart = await cartDao.getById(id);
+    const { id } = req.params
+    const cart = await cartService.getById(id)
+
     if (!cart) {
-      return res.status(404).json({ message: "Carrito no encontrado" });
+      return res.status(404).json({ error: "Carrito no encontrado" })
     }
-    res.status(200).json(cart);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
-// Eliminar producto del carrito
-export const removeProductFromCart = async (req, res) => {
-  const { id: cartId, prodId } = req.params;
+    res.status(200).json(cart)
+  } catch (error) {
+    console.error("Error en getCartById:", error.message)
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Agrega un producto al carrito del usuario
+ */
+export const addToCart = async (req, res) => {
   try {
-    const updatedCart = await cartDao.removeProdToCart(cartId, prodId);
-    if (!updatedCart) {
-      return res.status(404).json({ message: "Carrito o producto no encontrado" });
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Usuario no autenticado" })
     }
-    res.status(200).json(updatedCart);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
-// Vaciar carrito
+    const { productId } = req.body
+
+    if (!productId) {
+      return res.status(400).json({ error: "Se requiere el ID del producto" })
+    }
+
+    const user = await userService.getById(req.user.id)
+
+    if (!user || !user.cart) {
+      return res.status(404).json({ error: "Carrito no encontrado" })
+    }
+
+    const updatedCart = await cartService.addProdToCart(user.cart, productId)
+    res.status(200).json({ message: "Producto agregado al carrito", cart: updatedCart })
+  } catch (error) {
+    console.error("Error en addToCart:", error.message)
+
+    if (error.message.includes("stock")) {
+      return res.status(400).json({ error: error.message })
+    }
+
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Elimina un producto del carrito
+ */
+export const removeProductFromCart = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Usuario no autenticado" })
+    }
+
+    const { prodId } = req.params
+    const user = await userService.getById(req.user.id)
+
+    if (!user || !user.cart) {
+      return res.status(404).json({ error: "Carrito no encontrado" })
+    }
+
+    const updatedCart = await cartService.removeProdFromCart(user.cart, prodId)
+    res.status(200).json({ message: "Producto eliminado del carrito", cart: updatedCart })
+  } catch (error) {
+    console.error("Error en removeProductFromCart:", error.message)
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Vacía el carrito del usuario
+ */
 export const clearCart = async (req, res) => {
   try {
-    const user = req.user;
-    const cart = await CartModel.findById(user.cart);
-    
-    cart.products = [];
-    await cart.save();
-    
-    res.status(200).json({ message: "Carrito vaciado correctamente" });
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Usuario no autenticado" })
+    }
+
+    const user = await userService.getById(req.user.id)
+
+    if (!user || !user.cart) {
+      return res.status(404).json({ error: "Carrito no encontrado" })
+    }
+
+    await cartService.clearCart(user.cart)
+    res.status(200).json({ message: "Carrito vaciado correctamente" })
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error en clearCart:", error.message)
+    res.status(500).json({ error: error.message })
   }
-};
+}
+
+/**
+ * Actualiza la cantidad de un producto en el carrito
+ */
+export const updateProductQuantity = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Usuario no autenticado" })
+    }
+
+    const { prodId } = req.params
+    const { quantity } = req.body
+
+    if (!quantity || quantity < 1) {
+      return res.status(400).json({ error: "La cantidad debe ser al menos 1" })
+    }
+
+    const user = await userService.getById(req.user.id)
+
+    if (!user || !user.cart) {
+      return res.status(404).json({ error: "Carrito no encontrado" })
+    }
+
+    const updatedCart = await cartService.updateProdQuantity(user.cart, prodId, quantity)
+    res.status(200).json({ message: "Cantidad actualizada", cart: updatedCart })
+  } catch (error) {
+    console.error("Error en updateProductQuantity:", error.message)
+
+    if (error.message.includes("stock")) {
+      return res.status(400).json({ error: error.message })
+    }
+
+    res.status(500).json({ error: error.message })
+  }
+}

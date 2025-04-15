@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import UserDaoMongoDB from "../daos/user.dao.js"
 
 const userDao = new UserDaoMongoDB()
@@ -22,7 +23,15 @@ export const getAll = async () => {
  */
 export const getById = async (id) => {
   try {
+    // Validar que el ID sea un ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error(`ID de usuario inválido: ${id}`)
+    }
+
     const user = await userDao.getById(id)
+    if (!user) {
+      throw new Error(`Usuario con ID ${id} no encontrado`)
+    }
     return user
   } catch (error) {
     console.error("Error en getById:", error.message)

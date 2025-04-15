@@ -1,53 +1,54 @@
-import passport from "passport";
-import dotenv from "dotenv";
-dotenv.config();
+import passport from "passport"
+import dotenv from "dotenv"
+import jwt from "jsonwebtoken"
+import { userModel } from "../daos/models/user.model.js" // Añadir esta importación
 
-import jwt from "jsonwebtoken";
+dotenv.config()
 
 const cookieExtractor = (req) => {
-	return req?.cookies?.token || null; // Extrae el token de las cookies
-};
+  return req?.cookies?.token || null // Extrae el token de las cookies
+}
 
-export { cookieExtractor };
+export { cookieExtractor }
 
 // Middleware para proteger rutas con JWT
-export const authenticateJWT = passport.authenticate("jwt", { session: false });
+export const authenticateJWT = passport.authenticate("jwt", { session: false })
 
 export const authenticateUser = (req, res, next) => {
-	const token = req.headers.authorization?.split(" ")[1];
-	
-	if (!token) {
-	  return res.status(401).json({ message: "Acceso no autorizado" });
-	}
-  
-	try {
-	  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-	  req.user = decoded;
-	  next();
-	} catch (error) {
-	  res.status(401).json({ message: "Token inválido o expirado" });
-	}
-};
+  const token = req.headers.authorization?.split(" ")[1] || req.cookies.token
+
+  if (!token) {
+    return res.status(401).json({ message: "Acceso no autorizado" })
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    req.user = decoded
+    next()
+  } catch (error) {
+    res.status(401).json({ message: "Token inválido o expirado" })
+  }
+}
 
 export const authMiddleware = async (req, res, next) => {
-	try {
-	  const token = req.headers.authorization?.split(" ")[1];
-	  if (!token) return res.status(401).json({ error: "Token no proporcionado" });
-  
-	  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-	  const user = await userModel.findById(decoded.id);
-	  if (!user) return res.status(401).json({ error: "Usuario no existe" });
-  
-	  req.user = user; // Añade el usuario al request
-	  next();
-	} catch (error) {
-	  res.status(401).json({ error: "Token inválido" });
-	}
-};
+  try {
+    const token = req.headers.authorization?.split(" ")[1] || req.cookies.token
+    if (!token) return res.status(401).json({ error: "Token no proporcionado" })
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const user = await userModel.findById(decoded.id)
+    if (!user) return res.status(401).json({ error: "Usuario no existe" })
+
+    req.user = user // Añade el usuario al request
+    next()
+  } catch (error) {
+    res.status(401).json({ error: "Token inválido" })
+  }
+}
 
 export const adminMiddleware = (req, res, next) => {
-	if (req.user.role !== "admin") {
-	  return res.status(403).json({ error: "Acceso no autorizado" });
-	}
-	next();
-};
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Acceso no autorizado" })
+  }
+  next()
+}

@@ -1,15 +1,15 @@
-import express from "express";
-import { getUsers, getUserById, updateUser } from "../controllers/user.controller.js";
-import { authenticateUser } from "../middleware/auth.middleware.js";
+import express from "express"
+import { authenticateJWT, adminMiddleware } from "../middleware/auth.middleware.js"
+import * as userController from "../controllers/user.controller.js"
 
-const router = express.Router();
+const router = express.Router()
 
-// Obtener todos los usuarios (solo para administradores)
-router.get("/users", getUsers);
+// Rutas específicas primero
+router.get("/users", authenticateJWT, adminMiddleware, userController.getUsers)
+router.put("/users/update", authenticateJWT, userController.updateUser)
+router.put("/users/shipping", authenticateJWT, userController.updateShippingInfo)
 
-// Obtener un usuario por ID (solo para administradores)
-router.get("/users/:id", getUserById);
+// Ruta con parámetro al final
+router.get("/users/:id", authenticateJWT, userController.getUserById)
 
-router.put("/users/update", authenticateUser, updateUser);
-
-export default router;
+export default router

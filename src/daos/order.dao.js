@@ -4,7 +4,10 @@ import { userModel } from "./models/user.model.js"
 export default class OrderDaoMongoDB {
   async getAll() {
     try {
-      return await OrderModel.find().populate("user").populate("products.product")
+      return await OrderModel.find()
+        .populate("user", "nombre apellido email")
+        .populate("products.product")
+        .sort({ createdAt: -1 })
     } catch (error) {
       throw new Error(`Error al obtener todas las órdenes: ${error.message}`)
     }
@@ -12,7 +15,7 @@ export default class OrderDaoMongoDB {
 
   async getById(id) {
     try {
-      const order = await OrderModel.findById(id).populate("user").populate("products.product")
+      const order = await OrderModel.findById(id).populate("user", "nombre apellido email").populate("products.product")
 
       if (!order) {
         throw new Error(`Orden con ID ${id} no encontrada`)
@@ -59,6 +62,8 @@ export default class OrderDaoMongoDB {
         },
         { new: true },
       )
+        .populate("user", "nombre apellido email")
+        .populate("products.product")
     } catch (error) {
       throw new Error(`Error al actualizar el estado de la orden: ${error.message}`)
     }

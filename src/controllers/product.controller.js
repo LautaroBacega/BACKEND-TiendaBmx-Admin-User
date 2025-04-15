@@ -1,106 +1,154 @@
-import * as service from "../services/product.services.js";
+import * as productService from "../services/product.services.js"
 
+/**
+ * Obtiene todos los productos
+ */
 export const getAll = async (req, res, next) => {
   try {
-    const products = await service.getAll();
-    res.status(200).json(products);
-  } catch (error) {
-    next(error.message);
-  }
-};
+    // Extraer parámetros de consulta para filtrado y paginación
+    const { category, search, sort, limit, page } = req.query
 
+    const options = {
+      category,
+      search,
+      sort,
+      limit: limit ? Number.parseInt(limit) : undefined,
+      page: page ? Number.parseInt(page) : undefined,
+    }
+
+    const products = await productService.getAll(options)
+    res.status(200).json(products)
+  } catch (error) {
+    console.error("Error en getAll:", error.message)
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Obtiene un producto por su ID
+ */
 export const getById = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const response = await service.getById(id);
-    if (!response) res.status(404).json({ msg: "Product Not found!" });
-    else res.status(200).json(response);
-  } catch (error) {
-    next(error.message);
-  }
-};
+    const { id } = req.params
+    const product = await productService.getById(id)
 
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" })
+    }
+
+    res.status(200).json(product)
+  } catch (error) {
+    console.error("Error en getById:", error.message)
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Obtiene productos por categoría
+ */
+export const getByCategory = async (req, res, next) => {
+  try {
+    const { categoria } = req.params
+    const products = await productService.getByCategory(categoria)
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ error: "No hay productos en esta categoría" })
+    }
+
+    res.status(200).json(products)
+  } catch (error) {
+    console.error("Error en getByCategory:", error.message)
+    res.status(500).json({ error: error.message })
+  }
+}
+
+/**
+ * Crea un nuevo producto
+ */
 export const create = async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ msg: "No se han cargado imágenes." });
+      return res.status(400).json({ error: "No se han cargado imágenes" })
     }
-
-    // Verifica que req.files tenga los archivos esperados
-    console.log("Archivos recibidos:", req.files);
 
     // Mapeo de rutas de las imágenes subidas
-    const imageUrls = req.files.map(file => `http://localhost:8080/uploads/${file.filename}`);
-    console.log("Rutas de las imágenes:", imageUrls);
+    const imageUrls = req.files.map(
+      (file) => `${process.env.API_URL || "http://localhost:8080"}/uploads/${file.filename}`,
+    )
 
     // Crea el nuevo producto con las imágenes
-    const productData = { ...req.body, images: imageUrls };
+    const productData = { ...req.body, images: imageUrls }
+    const newProduct = await productService.create(productData)
 
-    const newProduct = await service.create(productData);
-
-    res.status(200).json(newProduct);
+    res.status(201).json(newProduct)
   } catch (error) {
-    next(error.message);
+    console.error("Error en create:", error.message)
+    res.status(400).json({ error: error.message })
   }
-};
+}
 
-
-
-
+/**
+ * Actualiza un producto existente
+ */
 export const update = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    let updatedData = req.body;
+    const { id } = req.params
+    const updatedData = req.body
 
+    // Si hay archivos nuevos, actualizar las imágenes
     if (req.files && req.files.length > 0) {
-      updatedData.images = req.files.map(file => `http://localhost:8080/uploads/${file.filename}`);
+      updatedData.images = req.files.map(
+        (file) => `${process.env.API_URL || "http://localhost:8080"}/uploads/${file.filename}`,
+      )
     }
 
-    const prodUpd = await service.update(id, updatedData);
-    res.status(200).json(prodUpd);
+    const updatedProduct = await productService.update(id, updatedData)
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Producto no encontrado" })
+    }
+
+    res.status(200).json(updatedProduct)
   } catch (error) {
-    next(error.message);
+    console.error("Error en update:", error.message)
+    res.status(400).json({ error: error.message })
   }
-};
+}
 
-
+/**
+ * Elimina un producto
+ */
 export const remove = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const prodDel = await service.remove(id);
-    if (!prodDel) res.status(404).json({ msg: "Error delete product!" });
-    else res.status(200).json({ msg: `Product id: ${id} deleted` });
-  } catch (error) {
-    next(error.message);
-  }
-};
+    const { id } = req.params
+    const deletedProduct = await productService.remove(id)
 
-export const uploadImage = (req, res) => {
-  console.log(req.file); // Verificar si el archivo se está recibiendo correctamente
-  try {
-    if (!req.file) {
-      return res.status(400).json({ msg: "No se ha cargado ninguna imagen." });
+    if (!deletedProduct) {
+      return res.status(404).json({ error: "Producto no encontrado" })
     }
 
-    const imageUrl = `http://localhost:8080/uploads/${req.file.filename}`;
-    res.status(200).json({ msg: "Imagen cargada con éxito", imageUrl });
+    res.status(200).json({ message: `Producto con ID ${id} eliminado correctamente` })
   } catch (error) {
-    res.status(500).json({ msg: "Error al cargar la imagen", error });
+    console.error("Error en remove:", error.message)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
-export const getByCategory = async (req, res, next) => {
-  const { categoria } = req.params;
-  
+/**
+ * Busca productos por término
+ */
+export const search = async (req, res, next) => {
   try {
-    const productos = await ProductModel.find({ categoria }).sort({ nombre: 1 });
-    
-    if (productos.length === 0) {
-      return res.status(404).json({ msg: "No hay productos de esta categoría" });
+    const { term } = req.query
+
+    if (!term) {
+      return res.status(400).json({ error: "Se requiere un término de búsqueda" })
     }
 
-    res.status(200).json(productos);
+    const products = await productService.search(term)
+    res.status(200).json(products)
   } catch (error) {
-    next(error.message);
+    console.error("Error en search:", error.message)
+    res.status(500).json({ error: error.message })
   }
-};
+}
