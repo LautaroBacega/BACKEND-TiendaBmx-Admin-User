@@ -17,7 +17,7 @@ router.get("/user/:userId", authenticateJWT, orderController.getUserOrders)
 router.get("/", authenticateJWT, adminMiddleware, orderController.getAllOrders)
 
 // Actualizar estado de una orden
-router.put("/:id/status", authenticateJWT, adminMiddleware, orderController.updateOrderStatus)
+router.patch("/:id/status", authenticateJWT, adminMiddleware, orderController.updateOrderStatus)
 
 // Actualizar estado de pago
 router.put("/:id/payment", authenticateJWT, adminMiddleware, orderController.updatePaymentStatus)
