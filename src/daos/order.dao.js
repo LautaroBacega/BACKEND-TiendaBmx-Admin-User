@@ -71,14 +71,6 @@ export default class OrderDaoMongoDB {
     }
   }
 
-  async updatePaymentStatus(orderId, paymentStatus) {
-    try {
-      return await OrderModel.findByIdAndUpdate(orderId, { paymentStatus }, { new: true })
-    } catch (error) {
-      throw new Error(`Error al actualizar el estado de pago: ${error.message}`)
-    }
-  }
-
   async delete(id) {
     try {
       const order = await OrderModel.findById(id)

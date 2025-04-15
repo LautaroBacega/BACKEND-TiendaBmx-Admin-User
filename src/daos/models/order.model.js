@@ -34,7 +34,6 @@ const orderSchema = new Schema(
       altura: String,
       codigoPostal: String,
       phone: String,
-      paymentMethod: String,
       trackingNumber: String,
       shippingCompany: String,
     },
@@ -42,11 +41,7 @@ const orderSchema = new Schema(
       type: Number,
       required: true,
     },
-    paymentStatus: {
-      type: String,
-      enum: ["pendiente", "completado", "rechazado"],
-      default: "pendiente",
-    },
+    // Eliminamos paymentStatus ya que es redundante con orderStatus
     orderStatus: [
       {
         status: {
@@ -55,13 +50,18 @@ const orderSchema = new Schema(
           default: "creado",
           required: true,
         },
-
         timestamp: {
           type: Date,
           default: Date.now,
         },
       },
     ],
+    // Agregamos el campo paymentMethod para guardar el método de pago seleccionado
+    paymentMethod: {
+      type: String,
+      enum: ["transferencia", "mercadopago"],
+      required: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -73,3 +73,4 @@ const orderSchema = new Schema(
 )
 
 export const OrderModel = model("Order", orderSchema)
+

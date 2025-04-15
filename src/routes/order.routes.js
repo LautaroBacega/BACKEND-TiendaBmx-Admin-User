@@ -19,9 +19,6 @@ router.get("/", authenticateJWT, adminMiddleware, orderController.getAllOrders)
 // Actualizar estado de una orden
 router.patch("/:id/status", authenticateJWT, adminMiddleware, orderController.updateOrderStatus)
 
-// Actualizar estado de pago
-router.put("/:id/payment", authenticateJWT, adminMiddleware, orderController.updatePaymentStatus)
-
 // Generar factura
 router.get("/:id/invoice", authenticateJWT, orderController.generateInvoice)
 

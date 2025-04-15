@@ -40,8 +40,15 @@ export const createOrder = async (req, res) => {
       })
     }
 
-    // Crear la orden
-    const newOrder = await orderService.createFromCart(user._id, user.cart, shippingInfo)
+    // Obtener el método de pago de la solicitud
+    const { paymentMethod } = req.body
+
+    if (!paymentMethod || !["transferencia", "mercadopago"].includes(paymentMethod)) {
+      return res.status(400).json({ error: "Método de pago inválido o no especificado" })
+    }
+
+    // Crear la orden con el método de pago
+    const newOrder = await orderService.createFromCart(user._id, user.cart, shippingInfo, paymentMethod)
 
     // Asegurarse de que la respuesta incluya todos los datos necesarios
     res.status(201).json(newOrder)
@@ -142,42 +149,7 @@ export const updateOrderStatus = async (req, res) => {
   }
 }
 
-/**
- * Actualiza el estado de pago de una orden
- */
-export const updatePaymentStatus = async (req, res) => {
-  try {
-    // Verificar si el usuario es administrador
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ error: "Acceso no autorizado" })
-    }
-
-    const { id } = req.params
-    const { paymentStatus } = req.body
-
-    if (!paymentStatus) {
-      return res.status(400).json({ error: "Se requiere el estado de pago" })
-    }
-
-    const updatedOrder = await orderService.updatePaymentStatus(id, paymentStatus)
-    res.status(200).json(updatedOrder)
-  } catch (error) {
-    console.error("Error en updatePaymentStatus:", error.message)
-    res.status(400).json({ error: error.message })
-  }
-}
-
-// Función auxiliar para formatear fechas en formato de 24 horas
-const formatDateTo24Hour = (date) => {
-  return date.toLocaleString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false, // Esto fuerza el formato de 24 horas
-  })
-}
+// Eliminamos la función updatePaymentStatus ya que no la necesitamos más
 
 /**
  * Genera una factura en formato Excel para una orden
@@ -331,6 +303,22 @@ export const generateInvoice = async (req, res) => {
       right: { style: "thin" },
     }
     shippingInfoRow3.getCell(2).border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    }
+
+    // Información de método de pago
+    const paymentMethodRow = worksheet.addRow(["Método de Pago:", order.paymentMethod || "No especificado", "", "", ""])
+    paymentMethodRow.getCell(1).font = { bold: true }
+    paymentMethodRow.getCell(1).border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    }
+    paymentMethodRow.getCell(2).border = {
       top: { style: "thin" },
       left: { style: "thin" },
       bottom: { style: "thin" },
@@ -527,7 +515,7 @@ export const exportAllOrders = async (req, res) => {
       "ID Orden",
       "Fecha",
       "Estado Actual",
-      "Pago",
+      "Método de Pago",
       "Total",
       "Cliente",
       "Email",
@@ -588,7 +576,7 @@ export const exportAllOrders = async (req, res) => {
         order._id.toString(),
         formattedDate,
         currentStatus,
-        order.paymentStatus || "Pendiente",
+        order.paymentMethod || "No especificado",
         order.totalAmount.toLocaleString("es-AR", { style: "currency", currency: "ARS" }),
         `${order.user?.nombre || ""} ${order.user?.apellido || ""}`,
         order.user?.email || "N/A",
@@ -719,7 +707,7 @@ export const exportAllOrders = async (req, res) => {
     worksheet.getColumn(1).width = 25 // ID Orden
     worksheet.getColumn(2).width = 20 // Fecha
     worksheet.getColumn(3).width = 15 // Estado Actual
-    worksheet.getColumn(4).width = 15 // Pago
+    worksheet.getColumn(4).width = 15 // Método de Pago
     worksheet.getColumn(5).width = 15 // Total
     worksheet.getColumn(6).width = 20 // Cliente
     worksheet.getColumn(7).width = 25 // Email
@@ -740,4 +728,16 @@ export const exportAllOrders = async (req, res) => {
     console.error("Error exportando órdenes:", error)
     res.status(500).json({ error: error.message })
   }
+}
+
+// Función auxiliar para formatear fechas en formato de 24 horas
+const formatDateTo24Hour = (date) => {
+  return date.toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false, // Esto fuerza el formato de 24 horas
+  })
 }

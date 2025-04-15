@@ -60,9 +60,10 @@ export const getByUser = async (userId) => {
  * @param {string} userId - ID del usuario
  * @param {string} cartId - ID del carrito
  * @param {Object} shippingInfo - Información de envío
+ * @param {string} paymentMethod - Método de pago
  * @returns {Promise<Object>} Orden creada
  */
-export const createFromCart = async (userId, cartId, shippingInfo) => {
+export const createFromCart = async (userId, cartId, shippingInfo, paymentMethod) => {
   try {
     // Verificar que exista el usuario
     const user = await userDao.getById(userId)
@@ -94,13 +95,13 @@ export const createFromCart = async (userId, cartId, shippingInfo) => {
       }
     })
 
-    // Crear la orden
+    // Crear la orden con el método de pago
     const orderData = {
       user: userId,
       products: orderProducts,
       shippingInfo,
       totalAmount,
-      paymentStatus: "pendiente",
+      paymentMethod, // Agregamos el método de pago
       orderStatus: [{ status: "creado" }],
     }
 
@@ -149,27 +150,6 @@ export const updateStatus = async (orderId, newStatus, trackingNumber, shippingC
   } catch (error) {
     console.error("Error en updateStatus:", error.message)
     throw new Error(`Error al actualizar estado de la orden: ${error.message}`)
-  }
-}
-
-/**
- * Actualiza el estado de pago de una orden
- * @param {string} orderId - ID de la orden
- * @param {string} paymentStatus - Nuevo estado de pago
- * @returns {Promise<Object>} Orden actualizada
- */
-export const updatePaymentStatus = async (orderId, paymentStatus) => {
-  try {
-    // Verificar que el estado de pago sea válido
-    const validPaymentStatuses = ["pendiente", "completado", "rechazado"]
-    if (!validPaymentStatuses.includes(paymentStatus)) {
-      throw new Error(`Estado de pago inválido. Debe ser uno de: ${validPaymentStatuses.join(", ")}`)
-    }
-
-    return await orderDao.updatePaymentStatus(orderId, paymentStatus)
-  } catch (error) {
-    console.error("Error en updatePaymentStatus:", error.message)
-    throw new Error(`Error al actualizar estado de pago: ${error.message}`)
   }
 }
 
