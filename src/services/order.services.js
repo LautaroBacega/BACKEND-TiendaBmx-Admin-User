@@ -124,17 +124,28 @@ export const createFromCart = async (userId, cartId, shippingInfo) => {
  * Actualiza el estado de una orden
  * @param {string} orderId - ID de la orden
  * @param {string} newStatus - Nuevo estado
+ * @param {string} trackingNumber - Número de seguimiento (opcional)
+ * @param {string} shippingCompany - Empresa de envío (opcional)
  * @returns {Promise<Object>} Orden actualizada
  */
-export const updateStatus = async (orderId, newStatus) => {
+export const updateStatus = async (orderId, newStatus, trackingNumber, shippingCompany) => {
   try {
-    // Verificar que el estado sea válido
-    const validStatuses = ["creado", "pago aprobado", "preparando paquete", "enviado", "entregado", "cancelado"]
-    if (!validStatuses.includes(newStatus)) {
-      throw new Error(`Estado inválido. Debe ser uno de: ${validStatuses.join(", ")}`)
+    const updateOps = {
+      $push: {
+        orderStatus: {
+          status: newStatus,
+          timestamp: new Date(),
+        },
+      },
     }
 
-    return await orderDao.updateStatus(orderId, newStatus)
+    if (trackingNumber || shippingCompany) {
+      updateOps.$set = {}
+      if (trackingNumber) updateOps.$set["shippingInfo.trackingNumber"] = trackingNumber
+      if (shippingCompany) updateOps.$set["shippingInfo.shippingCompany"] = shippingCompany
+    }
+
+    return await orderDao.updateStatus(orderId, newStatus, updateOps)
   } catch (error) {
     console.error("Error en updateStatus:", error.message)
     throw new Error(`Error al actualizar estado de la orden: ${error.message}`)

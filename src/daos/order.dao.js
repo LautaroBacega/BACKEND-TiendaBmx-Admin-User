@@ -48,20 +48,22 @@ export default class OrderDaoMongoDB {
     }
   }
 
-  async updateStatus(orderId, newStatus) {
+  async updateStatus(orderId, newStatus, additionalOps = {}) {
     try {
-      return await OrderModel.findByIdAndUpdate(
-        orderId,
-        {
-          $push: {
-            orderStatus: {
-              status: newStatus,
-              timestamp: new Date(),
-            },
+      const baseUpdate = {
+        $push: {
+          orderStatus: {
+            status: newStatus,
+            timestamp: new Date(),
           },
         },
-        { new: true },
-      )
+      }
+
+      // Merge the base update with any additional operations
+      const updateOps = { ...baseUpdate }
+      if (additionalOps.$set) updateOps.$set = additionalOps.$set
+
+      return await OrderModel.findByIdAndUpdate(orderId, updateOps, { new: true })
         .populate("user", "nombre apellido email")
         .populate("products.product")
     } catch (error) {

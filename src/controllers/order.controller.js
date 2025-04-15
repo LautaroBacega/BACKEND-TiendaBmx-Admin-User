@@ -120,29 +120,22 @@ export const getAllOrders = async (req, res) => {
   }
 }
 
-/**
- * Actualiza el estado de una orden
- */
+// Asegurarse de que el controlador maneje correctamente los parámetros
 export const updateOrderStatus = async (req, res) => {
   try {
-    // Verificar si el usuario es administrador
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ error: "Acceso no autorizado" })
-    }
-
     const { id } = req.params
-    const { status } = req.body
+    const { status, trackingNumber, shippingCompany } = req.body
 
-    if (!status) {
-      return res.status(400).json({ error: "Se requiere el estado" })
+    console.log("Updating order:", id, "with status:", status, "tracking:", trackingNumber, "company:", shippingCompany)
+
+    // Update the order status with tracking information
+    const updatedOrder = await orderService.updateStatus(id, status, trackingNumber, shippingCompany)
+
+    if (!updatedOrder) {
+      return res.status(404).json({ error: "Orden no encontrada" })
     }
 
-    const updatedOrder = await orderService.updateStatus(id, status)
-
-    // Obtener la orden completa con todos los datos populados para devolverla
-    const populatedOrder = await orderService.getById(id)
-
-    res.status(200).json(populatedOrder)
+    res.status(200).json({ success: true, orderStatus: updatedOrder.orderStatus })
   } catch (error) {
     console.error("Error en updateOrderStatus:", error.message)
     res.status(400).json({ error: error.message })
@@ -342,6 +335,30 @@ export const generateInvoice = async (req, res) => {
       left: { style: "thin" },
       bottom: { style: "thin" },
       right: { style: "thin" },
+    }
+
+    // Información de seguimiento
+    if (order.shippingInfo?.trackingNumber || order.shippingInfo?.shippingCompany) {
+      const shippingInfoRow4 = worksheet.addRow([
+        "Seguimiento:",
+        `${order.shippingInfo?.trackingNumber || "N/A"} (${order.shippingInfo?.shippingCompany || "N/A"})`,
+        "",
+        "",
+        "",
+      ])
+      shippingInfoRow4.getCell(1).font = { bold: true }
+      shippingInfoRow4.getCell(1).border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      }
+      shippingInfoRow4.getCell(2).border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      }
     }
 
     // Espacio entre secciones
@@ -587,6 +604,32 @@ export const exportAllOrders = async (req, res) => {
         cell.style = dataStyle
       })
       rowIndex++
+
+      // Información de seguimiento si existe
+      if (order.shippingInfo?.trackingNumber || order.shippingInfo?.shippingCompany) {
+        const trackingRow = worksheet.addRow([
+          "Seguimiento:",
+          `${order.shippingInfo?.trackingNumber || "N/A"}`,
+          "Empresa:",
+          `${order.shippingInfo?.shippingCompany || "N/A"}`,
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ])
+        trackingRow.eachCell((cell, colNumber) => {
+          if (colNumber === 1 || colNumber === 3) {
+            cell.font = { bold: true }
+          }
+          cell.style = dataStyle
+        })
+        rowIndex++
+      }
 
       // Espacio después de la información de la orden
       worksheet.addRow([])
