@@ -66,14 +66,14 @@ export const googleCallback = async (req, res) => {
     }
 
     // Generar token JWT
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" })
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "2h" })
 
     // Configurar cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+      maxAge: 2 * 60 * 60 * 1000 // 2 horas
     })
 
     // Redireccionar al cliente con el token
