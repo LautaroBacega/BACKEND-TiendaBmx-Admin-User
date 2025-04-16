@@ -149,8 +149,6 @@ export const updateOrderStatus = async (req, res) => {
   }
 }
 
-// Eliminamos la función updatePaymentStatus ya que no la necesitamos más
-
 /**
  * Genera una factura en formato Excel para una orden
  */
@@ -325,36 +323,56 @@ export const generateInvoice = async (req, res) => {
       right: { style: "thin" },
     }
 
-    // Información de seguimiento
-    if (order.shippingInfo?.trackingNumber || order.shippingInfo?.shippingCompany) {
-      const shippingInfoRow4 = worksheet.addRow([
-        "Seguimiento:",
-        `${order.shippingInfo?.trackingNumber || "N/A"} (${order.shippingInfo?.shippingCompany || "N/A"})`,
-        "",
-        "",
-        "",
-      ])
-      shippingInfoRow4.getCell(1).font = { bold: true }
-      shippingInfoRow4.getCell(1).border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      }
-      shippingInfoRow4.getCell(2).border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      }
+    // Información de empresa de envío
+    const shippingCompanyRow = worksheet.addRow([
+      "Empresa de Envío:",
+      order.shippingInfo?.shippingCompany || "N/A",
+      "",
+      "",
+      "",
+    ])
+    shippingCompanyRow.getCell(1).font = { bold: true }
+    shippingCompanyRow.getCell(1).border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    }
+    shippingCompanyRow.getCell(2).border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    }
+
+    // Información de número de seguimiento
+    const trackingNumberRow = worksheet.addRow([
+      "Número de Seguimiento:",
+      order.shippingInfo?.trackingNumber || "N/A",
+      "",
+      "",
+      "",
+    ])
+    trackingNumberRow.getCell(1).font = { bold: true }
+    trackingNumberRow.getCell(1).border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    }
+    trackingNumberRow.getCell(2).border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
     }
 
     // Espacio entre secciones
     worksheet.addRow([])
 
     // Título de la sección de productos
-    worksheet.mergeCells("A13:H13")
-    const productHeaderCell = worksheet.getCell("A13")
+    worksheet.mergeCells("A16:H16")
+    const productHeaderCell = worksheet.getCell("A16")
     productHeaderCell.value = "DETALLE DE PRODUCTOS"
     productHeaderCell.style = headerStyle
     productHeaderCell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 14 }
@@ -480,15 +498,14 @@ export const exportAllOrders = async (req, res) => {
     }
 
     const orderIdStyle = {
-      font: { bold: true, size: 14 },
+      font: { bold: true, size: 14, color: { argb: "FFFFFFFF" } },
       fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F81BD" } },
       border: { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } },
       alignment: { horizontal: "center", vertical: "middle" },
-      font: { bold: true, color: { argb: "FFFFFFFF" } },
     }
 
     // Título del reporte
-    worksheet.mergeCells("A1:M1")
+    worksheet.mergeCells("A1:O1")
     const titleCell = worksheet.getCell("A1")
     titleCell.value = "REPORTE COMPLETO DE ÓRDENES"
     titleCell.style = {
@@ -499,7 +516,7 @@ export const exportAllOrders = async (req, res) => {
     worksheet.getRow(1).height = 30
 
     // Información del reporte - Fecha de generación
-    worksheet.mergeCells("A2:M2")
+    worksheet.mergeCells("A2:O2")
     const infoCell = worksheet.getCell("A2")
     infoCell.value = `Generado el: ${formatDateTo24Hour(new Date())}`
     infoCell.style = {
@@ -524,6 +541,8 @@ export const exportAllOrders = async (req, res) => {
       "Ciudad",
       "Provincia",
       "CP",
+      "Empresa de Envío",
+      "Número de Seguimiento",
       "Productos",
     ]
 
@@ -538,10 +557,6 @@ export const exportAllOrders = async (req, res) => {
       "Precio Unitario",
       "Cantidad",
       "Subtotal",
-      "",
-      "",
-      "",
-      "",
     ]
 
     let rowIndex = 4 // Comenzamos después del título y la fecha
@@ -550,7 +565,7 @@ export const exportAllOrders = async (req, res) => {
       const order = orders[i]
 
       // ID de la orden destacado
-      worksheet.mergeCells(`A${rowIndex}:M${rowIndex}`)
+      worksheet.mergeCells(`A${rowIndex}:O${rowIndex}`)
       const orderIdCell = worksheet.getCell(`A${rowIndex}`)
       orderIdCell.value = `ORDEN: ${order._id.toString()}`
       orderIdCell.style = orderIdStyle
@@ -559,7 +574,7 @@ export const exportAllOrders = async (req, res) => {
 
       // Cabeceras de la orden
       const headerRow = worksheet.addRow(orderHeaders)
-      headerRow.eachCell((cell) => {
+      headerRow.eachCell((cell, colNumber) => {
         cell.style = subHeaderStyle
       })
       rowIndex++
@@ -585,6 +600,8 @@ export const exportAllOrders = async (req, res) => {
         order.shippingInfo?.ciudad || "N/A",
         order.shippingInfo?.provincia || "N/A",
         order.shippingInfo?.codigoPostal || "N/A",
+        order.shippingInfo?.shippingCompany || "N/A",
+        order.shippingInfo?.trackingNumber || "N/A",
         order.products.length,
       ])
 
@@ -593,38 +610,12 @@ export const exportAllOrders = async (req, res) => {
       })
       rowIndex++
 
-      // Información de seguimiento si existe
-      if (order.shippingInfo?.trackingNumber || order.shippingInfo?.shippingCompany) {
-        const trackingRow = worksheet.addRow([
-          "Seguimiento:",
-          `${order.shippingInfo?.trackingNumber || "N/A"}`,
-          "Empresa:",
-          `${order.shippingInfo?.shippingCompany || "N/A"}`,
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-        ])
-        trackingRow.eachCell((cell, colNumber) => {
-          if (colNumber === 1 || colNumber === 3) {
-            cell.font = { bold: true }
-          }
-          cell.style = dataStyle
-        })
-        rowIndex++
-      }
-
       // Espacio después de la información de la orden
       worksheet.addRow([])
       rowIndex++
 
       // Título simplificado de "Productos"
-      worksheet.mergeCells(`A${rowIndex}:M${rowIndex}`)
+      worksheet.mergeCells(`A${rowIndex}:I${rowIndex}`)
       const productsHeaderCell = worksheet.getCell(`A${rowIndex}`)
       productsHeaderCell.value = "PRODUCTOS"
       productsHeaderCell.style = {
@@ -641,7 +632,7 @@ export const exportAllOrders = async (req, res) => {
       rowIndex++
 
       // Cabeceras de productos
-      const productHeaderRow = worksheet.addRow(productHeaders.slice(0, 9)) // Solo las primeras 9 columnas
+      const productHeaderRow = worksheet.addRow(productHeaders) // Usar todas las columnas de productos
       productHeaderRow.eachCell((cell) => {
         cell.style = subHeaderStyle
       })
@@ -691,7 +682,7 @@ export const exportAllOrders = async (req, res) => {
         rowIndex++
 
         // Añadir una línea separadora más ancha con el color azul del título
-        const separatorRow = worksheet.addRow(Array(13).fill(""))
+        const separatorRow = worksheet.addRow(Array(15).fill(""))
         separatorRow.eachCell((cell) => {
           cell.style = separatorStyle
         })
@@ -716,7 +707,9 @@ export const exportAllOrders = async (req, res) => {
     worksheet.getColumn(10).width = 15 // Ciudad
     worksheet.getColumn(11).width = 15 // Provincia
     worksheet.getColumn(12).width = 10 // CP
-    worksheet.getColumn(13).width = 10 // Productos
+    worksheet.getColumn(13).width = 15 // Empresa de Envío
+    worksheet.getColumn(14).width = 20 // Número de Seguimiento
+    worksheet.getColumn(15).width = 10 // Productos
 
     // Configurar respuesta
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
