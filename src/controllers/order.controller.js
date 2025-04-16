@@ -1,6 +1,7 @@
 import * as orderService from "../services/order.services.js"
 import * as userService from "../services/user.services.js"
 import ExcelJS from "exceljs"
+import PDFDocument from "pdfkit" 
 
 /**
  * Crea una nueva orden a partir del carrito del usuario
@@ -739,4 +740,84 @@ const formatDateTo24Hour = (date) => {
     minute: "2-digit",
     hour12: false, // Esto fuerza el formato de 24 horas
   })
+}
+
+/**
+ * Genera una factura en formato PDF para una orden
+ */
+export const generatePDFInvoice = async (req, res) => {
+  try {
+    const { id } = req.params
+    const order = await orderService.getById(id)
+
+    if (!order) {
+      return res.status(404).json({ error: "Orden no encontrada" })
+    }
+
+    if (req.user.role !== "admin" && order.user._id.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Acceso no autorizado" })
+    }
+
+    // Crear PDF
+    const doc = new PDFDocument()
+    const formattedOrderNumber = `#${order.orderNumber.toString().padStart(4, "0")}`
+
+    // Configurar headers
+    res.setHeader("Content-Type", "application/pdf")
+    res.setHeader("Content-Disposition", `attachment; filename=Factura-${formattedOrderNumber}.pdf`)
+
+    // Pipe PDF a la respuesta
+    doc.pipe(res)
+
+    // Estilos base
+    doc.fontSize(12)
+      .font('Helvetica-Bold')
+      .text('Factura de Compra', { align: 'center', underline: true })
+      .moveDown(0.5)
+
+    // Información de la orden
+    doc.font('Helvetica')
+       .text(`Número de Orden: ${formattedOrderNumber}`)
+       .text(`Fecha y Hora: ${new Date(order.createdAt).toLocaleString('es-AR', {
+         day: '2-digit',
+         month: '2-digit',
+         year: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit',
+         hour12: false
+       })}`)
+       .text(`Método de Pago: ${order.paymentMethod.toUpperCase()}`)
+       .moveDown()
+
+    // Información del cliente
+    doc.font('Helvetica-Bold').text('Datos del Cliente:').font('Helvetica')
+    .text(`Nombre: ${order.user.nombre} ${order.user.apellido}`)
+    .text(`Email: ${order.user.email}`)
+    .text(`Teléfono: ${order.shippingInfo.phone}`)
+    .moveDown()
+
+    // Dirección completa
+    doc.font('Helvetica-Bold').text('Dirección de Envío:').font('Helvetica')
+       .text(`${order.shippingInfo.calle} ${order.shippingInfo.altura}`)
+       .text(`${order.shippingInfo.ciudad}, ${order.shippingInfo.provincia}`)
+       .text(`CP: ${order.shippingInfo.codigoPostal}`)
+       .moveDown()
+
+    // Detalles de productos
+    doc.font('Helvetica-Bold').text('Productos:').font('Helvetica')
+    order.products.forEach((item, index) => {
+      doc.text(`${index + 1}. ${item.product.marca} ${item.product.modelo}`)
+        .text(`   Cantidad: ${item.quantity} - Precio: $${item.priceAtPurchase.toFixed(2)}`)
+    })
+
+    // Totales
+    doc.moveDown()
+      .font('Helvetica-Bold')
+      .text(`Total: $${order.totalAmount.toFixed(2)}`, { align: 'right' })
+
+    doc.end()
+  } catch (error) {
+    console.error("Error generando factura PDF:", error)
+    res.status(500).json({ error: error.message })
+  }
 }

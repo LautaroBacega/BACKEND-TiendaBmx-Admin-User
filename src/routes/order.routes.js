@@ -25,4 +25,6 @@ router.get("/:id/invoice", authenticateJWT, orderController.generateInvoice)
 // Exportar todas las órdenes
 router.get("/export/all", authenticateJWT, adminMiddleware, orderController.exportAllOrders)
 
+router.get("/:id/pdf-invoice", authenticateJWT, orderController.generatePDFInvoice)
+
 export default router
