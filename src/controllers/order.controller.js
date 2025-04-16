@@ -1,7 +1,8 @@
 import * as orderService from "../services/order.services.js"
 import * as userService from "../services/user.services.js"
+import * as emailService from "../services/email.services.js"
 import ExcelJS from "exceljs"
-import PDFDocument from "pdfkit" 
+import PDFDocument from "pdfkit"
 
 /**
  * Crea una nueva orden a partir del carrito del usuario
@@ -50,6 +51,23 @@ export const createOrder = async (req, res) => {
 
     // Crear la orden con el método de pago
     const newOrder = await orderService.createFromCart(user._id, user.cart, shippingInfo, paymentMethod)
+
+    // Generar y enviar el PDF por correo electrónico
+    try {
+      // Obtener la orden completa con todos los datos populados
+      const populatedOrder = await orderService.getById(newOrder._id)
+
+      // Generar el PDF como buffer
+      const pdfBuffer = await emailService.generateOrderPDFBuffer(populatedOrder)
+
+      // Enviar el correo con el PDF adjunto
+      await emailService.sendOrderConfirmationEmail(populatedOrder, pdfBuffer)
+
+      console.log(`Correo con factura enviado a ${user.email} para la orden ${newOrder._id}`)
+    } catch (emailError) {
+      // Si hay un error al enviar el correo, lo registramos pero no interrumpimos el flujo
+      console.error("Error al enviar el correo con la factura:", emailError)
+    }
 
     // Asegurarse de que la respuesta incluya todos los datos necesarios
     res.status(201).json(newOrder)
@@ -770,50 +788,62 @@ export const generatePDFInvoice = async (req, res) => {
     doc.pipe(res)
 
     // Estilos base
-    doc.fontSize(12)
-      .font('Helvetica-Bold')
-      .text('Factura de Compra', { align: 'center', underline: true })
+    doc
+      .fontSize(12)
+      .font("Helvetica-Bold")
+      .text("Factura de Compra", { align: "center", underline: true })
       .moveDown(0.5)
 
     // Información de la orden
-    doc.font('Helvetica')
-       .text(`Número de Orden: ${formattedOrderNumber}`)
-       .text(`Fecha y Hora: ${new Date(order.createdAt).toLocaleString('es-AR', {
-         day: '2-digit',
-         month: '2-digit',
-         year: 'numeric',
-         hour: '2-digit',
-         minute: '2-digit',
-         hour12: false
-       })}`)
-       .text(`Método de Pago: ${order.paymentMethod.toUpperCase()}`)
-       .moveDown()
+    doc
+      .font("Helvetica")
+      .text(`Número de Orden: ${formattedOrderNumber}`)
+      .text(
+        `Fecha y Hora: ${new Date(order.createdAt).toLocaleString("es-AR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })}`,
+      )
+      .text(`Método de Pago: ${order.paymentMethod.toUpperCase()}`)
+      .moveDown()
 
     // Información del cliente
-    doc.font('Helvetica-Bold').text('Datos del Cliente:').font('Helvetica')
-    .text(`Nombre: ${order.user.nombre} ${order.user.apellido}`)
-    .text(`Email: ${order.user.email}`)
-    .text(`Teléfono: ${order.shippingInfo.phone}`)
-    .moveDown()
+    doc
+      .font("Helvetica-Bold")
+      .text("Datos del Cliente:")
+      .font("Helvetica")
+      .text(`Nombre: ${order.user.nombre} ${order.user.apellido}`)
+      .text(`Email: ${order.user.email}`)
+      .text(`Teléfono: ${order.shippingInfo.phone}`)
+      .moveDown()
 
     // Dirección completa
-    doc.font('Helvetica-Bold').text('Dirección de Envío:').font('Helvetica')
-       .text(`${order.shippingInfo.calle} ${order.shippingInfo.altura}`)
-       .text(`${order.shippingInfo.ciudad}, ${order.shippingInfo.provincia}`)
-       .text(`CP: ${order.shippingInfo.codigoPostal}`)
-       .moveDown()
+    doc
+      .font("Helvetica-Bold")
+      .text("Dirección de Envío:")
+      .font("Helvetica")
+      .text(`${order.shippingInfo.calle} ${order.shippingInfo.altura}`)
+      .text(`${order.shippingInfo.ciudad}, ${order.shippingInfo.provincia}`)
+      .text(`CP: ${order.shippingInfo.codigoPostal}`)
+      .moveDown()
 
     // Detalles de productos
-    doc.font('Helvetica-Bold').text('Productos:').font('Helvetica')
+    doc.font("Helvetica-Bold").text("Productos:").font("Helvetica")
     order.products.forEach((item, index) => {
-      doc.text(`${index + 1}. ${item.product.marca} ${item.product.modelo}`)
+      doc
+        .text(`${index + 1}. ${item.product.marca} ${item.product.modelo}`)
         .text(`   Cantidad: ${item.quantity} - Precio: $${item.priceAtPurchase.toFixed(2)}`)
     })
 
     // Totales
-    doc.moveDown()
-      .font('Helvetica-Bold')
-      .text(`Total: $${order.totalAmount.toFixed(2)}`, { align: 'right' })
+    doc
+      .moveDown()
+      .font("Helvetica-Bold")
+      .text(`Total: $${order.totalAmount.toFixed(2)}`, { align: "right" })
 
     doc.end()
   } catch (error) {
