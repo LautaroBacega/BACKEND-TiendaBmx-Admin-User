@@ -233,8 +233,11 @@ export const generateInvoice = async (req, res) => {
     const orderDate = new Date(order.createdAt)
     const formattedDate = formatDateTo24Hour(orderDate)
 
+    // Formatear el número de orden con ceros a la izquierda (4 dígitos)
+    const formattedOrderNumber = `#${order.orderNumber.toString().padStart(4, "0")}`
+
     const orderDataRow = worksheet.addRow([
-      order._id.toString(),
+      formattedOrderNumber,
       formattedDate,
       currentStatus,
       `${order.user?.nombre || ""} ${order.user?.apellido || ""}`,
@@ -440,7 +443,7 @@ export const generateInvoice = async (req, res) => {
 
     // Configurar respuesta
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    res.setHeader("Content-Disposition", `attachment; filename=Factura-${order._id}.xlsx`)
+    res.setHeader("Content-Disposition", `attachment; filename=Factura-${formattedOrderNumber}.xlsx`)
 
     await workbook.xlsx.write(res)
     res.end()
@@ -529,7 +532,7 @@ export const exportAllOrders = async (req, res) => {
 
     // Cabeceras de columnas para órdenes
     const orderHeaders = [
-      "ID Orden",
+      "Nº Orden",
       "Fecha",
       "Estado Actual",
       "Método de Pago",
@@ -564,10 +567,13 @@ export const exportAllOrders = async (req, res) => {
     for (let i = 0; i < orders.length; i++) {
       const order = orders[i]
 
+      // Formatear el número de orden con ceros a la izquierda (4 dígitos)
+      const formattedOrderNumber = `#${order.orderNumber.toString().padStart(4, "0")}`
+
       // ID de la orden destacado
       worksheet.mergeCells(`A${rowIndex}:O${rowIndex}`)
       const orderIdCell = worksheet.getCell(`A${rowIndex}`)
-      orderIdCell.value = `ORDEN: ${order._id.toString()}`
+      orderIdCell.value = `ORDEN: ${formattedOrderNumber}`
       orderIdCell.style = orderIdStyle
       worksheet.getRow(rowIndex).height = 25
       rowIndex++
@@ -588,7 +594,7 @@ export const exportAllOrders = async (req, res) => {
 
       // Fila principal de la orden
       const orderRow = worksheet.addRow([
-        order._id.toString(),
+        formattedOrderNumber,
         formattedDate,
         currentStatus,
         order.paymentMethod || "No especificado",
@@ -695,7 +701,7 @@ export const exportAllOrders = async (req, res) => {
     }
 
     // Ajustar anchos de columna
-    worksheet.getColumn(1).width = 25 // ID Orden
+    worksheet.getColumn(1).width = 15 // Nº Orden
     worksheet.getColumn(2).width = 20 // Fecha
     worksheet.getColumn(3).width = 15 // Estado Actual
     worksheet.getColumn(4).width = 15 // Método de Pago

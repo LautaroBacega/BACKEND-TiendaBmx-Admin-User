@@ -1,7 +1,23 @@
-import { OrderModel } from "./models/order.model.js"
-import { userModel } from "./models/user.model.js"
+import { OrderModel, CounterModel } from "../daos/models/order.model.js"
+import { userModel } from "../daos/models/user.model.js"
 
 export default class OrderDaoMongoDB {
+  async getNextOrderNumber() {
+    try {
+      // Buscar el contador o crearlo si no existe
+      const counter = await CounterModel.findByIdAndUpdate(
+        { _id: "orderNumber" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true },
+      )
+
+      // Formatear el número con ceros a la izquierda (4 dígitos)
+      return counter.seq
+    } catch (error) {
+      throw new Error(`Error al generar el número de orden: ${error.message}`)
+    }
+  }
+
   async getAll() {
     try {
       return await OrderModel.find()
@@ -37,7 +53,16 @@ export default class OrderDaoMongoDB {
 
   async create(orderData) {
     try {
-      const newOrder = await OrderModel.create(orderData)
+      // Obtener el siguiente número de orden
+      const orderNumber = await this.getNextOrderNumber()
+
+      // Agregar el número de orden a los datos
+      const orderWithNumber = {
+        ...orderData,
+        orderNumber,
+      }
+
+      const newOrder = await OrderModel.create(orderWithNumber)
 
       // Actualizar el usuario con la referencia a la nueva orden
       await userModel.findByIdAndUpdate(orderData.user, { $push: { orders: newOrder._id } })

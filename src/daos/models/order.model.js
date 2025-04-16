@@ -2,6 +2,11 @@ import { Schema, model } from "mongoose"
 
 const orderSchema = new Schema(
   {
+    orderNumber: {
+      type: Number,
+      unique: true,
+      required: true,
+    },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -73,4 +78,12 @@ const orderSchema = new Schema(
 )
 
 export const OrderModel = model("Order", orderSchema)
+
+// Modelo para el contador de órdenes
+const counterSchema = new Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 },
+})
+
+export const CounterModel = model("Counter", counterSchema)
 
