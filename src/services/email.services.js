@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer"
-import PDFDocument from "pdfkit"
+import { generateInvoicePDF } from "../utils/pdf-generator.js"
 
 // Configuración del transporter de nodemailer
 const createTransporter = () => {
@@ -22,83 +22,8 @@ const createTransporter = () => {
  * @returns {Promise<Buffer>} - Buffer del PDF generado
  */
 export const generateOrderPDFBuffer = async (order) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const buffers = []
-      const doc = new PDFDocument()
-      const formattedOrderNumber = `#${order.orderNumber.toString().padStart(4, "0")}`
-
-      // Capturar el PDF en un buffer
-      doc.on("data", buffers.push.bind(buffers))
-      doc.on("end", () => {
-        const pdfBuffer = Buffer.concat(buffers)
-        resolve(pdfBuffer)
-      })
-
-      // Estilos base
-      doc
-        .fontSize(12)
-        .font("Helvetica-Bold")
-        .text("Factura de Compra", { align: "center", underline: true })
-        .moveDown(0.5)
-
-      // Información de la orden
-      doc
-        .font("Helvetica")
-        .text(`Número de Orden: ${formattedOrderNumber}`)
-        .text(
-          `Fecha y Hora: ${new Date(order.createdAt).toLocaleString("es-AR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          })}`,
-        )
-        .text(`Método de Pago: ${order.paymentMethod.toUpperCase()}`)
-        .moveDown()
-
-      // Información del cliente
-      doc
-        .font("Helvetica-Bold")
-        .text("Datos del Cliente:")
-        .font("Helvetica")
-        .text(`Nombre: ${order.user.nombre} ${order.user.apellido}`)
-        .text(`Email: ${order.user.email}`)
-        .text(`Teléfono: ${order.shippingInfo.phone}`)
-        .moveDown()
-
-      // Dirección completa
-      doc
-        .font("Helvetica-Bold")
-        .text("Dirección de Envío:")
-        .font("Helvetica")
-        .text(`${order.shippingInfo.calle} ${order.shippingInfo.altura}`)
-        .text(`${order.shippingInfo.ciudad}, ${order.shippingInfo.provincia}`)
-        .text(`CP: ${order.shippingInfo.codigoPostal}`)
-        .moveDown()
-
-      // Detalles de productos
-      doc.font("Helvetica-Bold").text("Productos:").font("Helvetica")
-      order.products.forEach((item, index) => {
-        doc
-          .text(`${index + 1}. ${item.product.marca} ${item.product.modelo}`)
-          .text(`   Cantidad: ${item.quantity} - Precio: $${item.priceAtPurchase.toFixed(2)}`)
-      })
-
-      // Totales
-      doc
-        .moveDown()
-        .font("Helvetica-Bold")
-        .text(`Total: $${order.totalAmount.toFixed(2)}`, { align: "right" })
-
-      doc.end()
-    } catch (error) {
-      reject(error)
-    }
-  })
-}
+    return generateInvoicePDF(order)
+  }
 
 /**
  * Envía un correo electrónico con la factura PDF adjunta
