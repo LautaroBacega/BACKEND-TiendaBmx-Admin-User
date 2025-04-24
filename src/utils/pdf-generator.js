@@ -3,7 +3,7 @@ import fs from "fs"
 import path from "path"
 
 /**
- * Genera un PDF de factura con diseño mejorado
+ * Genera un PDF de nota de pedido
  * @param {Object} order - Datos completos de la orden
  * @returns {Promise<Buffer>} - Buffer del PDF generado
  */
@@ -37,10 +37,10 @@ export const generateInvoicePDF = async (order) => {
       // Logo o nombre de la tienda
       doc.font("Helvetica-Bold").fontSize(28).fillColor("#ffffff").text("ACCESORIOS BMX", 50, 50)
 
-      // Información de la factura
+      // Información de la nota de pedido
       doc
         .fontSize(14)
-        .text("FACTURA DE COMPRA", 50, 85)
+        .text("NOTA DE PEDIDO", 50, 85)
         .fontSize(12)
         .text(`Número: ${formattedOrderNumber}`, 50, 105)
         .text(`Fecha: ${new Date(order.createdAt).toLocaleDateString("es-AR")}`, 50, 125)

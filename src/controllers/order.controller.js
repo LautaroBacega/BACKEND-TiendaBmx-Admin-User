@@ -63,10 +63,10 @@ export const createOrder = async (req, res) => {
       // Enviar el correo con el PDF adjunto
       await emailService.sendOrderConfirmationEmail(populatedOrder, pdfBuffer)
 
-      console.log(`Correo con factura enviado a ${user.email} para la orden ${newOrder._id}`)
+      console.log(`Correo con nota de pedido enviado a ${user.email} para la orden ${newOrder._id}`)
     } catch (emailError) {
       // Si hay un error al enviar el correo, lo registramos pero no interrumpimos el flujo
-      console.error("Error al enviar el correo con la factura:", emailError)
+      console.error("Error al enviar el correo con la nota de pedido:", emailError)
     }
 
     // Asegurarse de que la respuesta incluya todos los datos necesarios
@@ -169,7 +169,7 @@ export const updateOrderStatus = async (req, res) => {
 }
 
 /**
- * Genera una factura en formato Excel para una orden
+ * Genera una nota de pedido en formato Excel para una orden
  */
 export const generateInvoice = async (req, res) => {
   try {
@@ -187,7 +187,7 @@ export const generateInvoice = async (req, res) => {
 
     // Crear workbook
     const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet("Factura")
+    const worksheet = workbook.addWorksheet("Nota de Pedido")
 
     // Configuración de estilos
     const headerStyle = {
@@ -218,7 +218,7 @@ export const generateInvoice = async (req, res) => {
     // Título del reporte
     worksheet.mergeCells("A1:H1")
     const titleCell = worksheet.getCell("A1")
-    titleCell.value = "FACTURA DE ORDEN"
+    titleCell.value = "NOTA DE PEDIDO"
     titleCell.style = {
       font: { bold: true, size: 16, color: { argb: "FFFFFFFF" } },
       fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F81BD" } },
@@ -462,12 +462,12 @@ export const generateInvoice = async (req, res) => {
 
     // Configurar respuesta
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    res.setHeader("Content-Disposition", `attachment; filename=Factura-${formattedOrderNumber}.xlsx`)
+    res.setHeader("Content-Disposition", `attachment; filename=Nota de Pedido-${formattedOrderNumber}.xlsx`)
 
     await workbook.xlsx.write(res)
     res.end()
   } catch (error) {
-    console.error("Error generando factura:", error)
+    console.error("Error generando nota de pedido:", error)
     res.status(500).json({ error: error.message })
   }
 }
@@ -761,7 +761,7 @@ const formatDateTo24Hour = (date) => {
 }
 
 /**
- * Genera una factura en formato PDF para una orden
+ * Genera una nota de pedido en formato PDF para una orden
  */
 export const generatePDFInvoice = async (req, res) => {
   try {
@@ -782,12 +782,12 @@ export const generatePDFInvoice = async (req, res) => {
     // Configurar headers
     const formattedOrderNumber = `#${order.orderNumber.toString().padStart(4, "0")}`
     res.setHeader("Content-Type", "application/pdf")
-    res.setHeader("Content-Disposition", `attachment; filename=Factura-${formattedOrderNumber}.pdf`)
+    res.setHeader("Content-Disposition", `attachment; filename=Nota de Pedido-${formattedOrderNumber}.pdf`)
 
     // Enviar el PDF como respuesta
     res.send(pdfBuffer)
   } catch (error) {
-    console.error("Error generando factura PDF:", error)
+    console.error("Error generando nota de pedido PDF:", error)
     res.status(500).json({ error: error.message })
   }
 }

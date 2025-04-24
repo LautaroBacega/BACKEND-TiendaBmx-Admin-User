@@ -19,7 +19,7 @@ router.get("/", authenticateJWT, adminMiddleware, orderController.getAllOrders)
 // Actualizar estado de una orden
 router.patch("/:id/status", authenticateJWT, adminMiddleware, orderController.updateOrderStatus)
 
-// Generar factura
+// Generar nota de pedido
 router.get("/:id/invoice", authenticateJWT, orderController.generateInvoice)
 
 // Exportar todas las órdenes

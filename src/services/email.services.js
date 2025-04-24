@@ -17,7 +17,7 @@ const createTransporter = () => {
 }
 
 /**
- * Genera un PDF de factura y lo devuelve como un buffer
+ * Genera un PDF de nota de pedido y lo devuelve como un buffer	
  * @param {Object} order - Datos de la orden
  * @returns {Promise<Buffer>} - Buffer del PDF generado
  */
@@ -26,7 +26,7 @@ export const generateOrderPDFBuffer = async (order) => {
   }
 
 /**
- * Envía un correo electrónico con la factura PDF adjunta
+ * Envía un correo electrónico con la nota de pedido PDF adjunta
  * @param {Object} order - Datos de la orden
  * @param {Buffer} pdfBuffer - Buffer del PDF a adjuntar
  * @returns {Promise<Object>} - Resultado del envío
@@ -54,7 +54,7 @@ export const sendOrderConfirmationEmail = async (order, pdfBuffer) => {
             <p><strong>Método de Pago:</strong> ${order.paymentMethod.toUpperCase()}</p>
           </div>
           
-          <p>Adjunto encontrarás la factura de tu compra en formato PDF.</p>
+          <p>Adjunto encontrarás la nota de pedido de tu compra en formato PDF.</p>
           
           <p>Si tienes alguna pregunta sobre tu pedido, no dudes en contactarnos.</p>
           
@@ -63,7 +63,7 @@ export const sendOrderConfirmationEmail = async (order, pdfBuffer) => {
       `,
       attachments: [
         {
-          filename: `factura-${formattedOrderNumber}.pdf`,
+          filename: `Nota de pedido-${formattedOrderNumber}.pdf`,
           content: pdfBuffer,
         },
       ],
