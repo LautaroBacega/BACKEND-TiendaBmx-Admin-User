@@ -46,7 +46,6 @@ const orderSchema = new Schema(
       type: Number,
       required: true,
     },
-    // Eliminamos paymentStatus ya que es redundante con orderStatus
     orderStatus: [
       {
         status: {
@@ -61,7 +60,6 @@ const orderSchema = new Schema(
         },
       },
     ],
-    // Agregamos el campo paymentMethod para guardar el método de pago seleccionado
     paymentMethod: {
       type: String,
       enum: ["transferencia", "mercadopago"],
