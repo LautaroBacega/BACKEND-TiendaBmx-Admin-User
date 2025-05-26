@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import 'dotenv/config'
 
-const MONGO_URL = process.env.MONGO_URL || 'mongodb+srv://lautibacega:PI9h0rfj6Fz9Rn1y@cluster0.8ia2e.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+const MONGO_URL = process.env.MONGO_URL || 'mongodb+srv://lautibacega:9xjZ5VZos8a7fTXY@cluster0.8ia2e.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
 
 export const initMongoDB = async () => {
   try {
@@ -12,4 +12,3 @@ export const initMongoDB = async () => {
       console.log(error);
   }
 };
-
